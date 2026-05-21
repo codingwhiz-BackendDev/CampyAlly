@@ -1,0 +1,211 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ zone.name }} — Redemption City Parking</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link
+        href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@600;700&family=DM+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="{% static 'css/index.css' %}">
+    <link rel="stylesheet" href="{% static 'css/parking.css' %}">
+    <link rel="stylesheet" href="{% static 'css/zone_detail.css' %}">
+</head>
+
+<body>
+    <!-- ANIMATED BACKGROUND ELEMENTS -->
+    <div class="bg-orbs">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+    </div>
+
+    <!-- NAV -->
+    <nav class="site-nav">
+        <div class="container">
+            <div class="nav-inner">
+                <a href="/" class="nav-logo">
+                    <div class="nav-logo-mark">
+                        <div class="logo-glow"></div>
+                        <i class="fa-solid fa-square-parking"></i>
+                    </div>
+                    <div class="logo-text">
+                        <span class="logo-main">CampEase</span>
+                        <span class="logo-badge">Parking</span>
+                    </div>
+                </a>
+                <div class="nav-links-wrap">
+                    <a href="/" class="nav-link">Home</a>
+                    <a href="/parking/" class="nav-link">All Zones</a>
+                    <a href="/parking/zone/{{ zone.id }}/" class="nav-link active">{{ zone.name }}</a>
+                </div>
+                <div class="nav-actions">
+                    <button class="btn btn-primary"><i class="fa-solid fa-sparkles"></i> Help</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ZONE DETAIL SECTION -->
+    <section id="zone-detail">
+        <div class="container">
+            <!-- Zone Header -->
+            <div class="zone-header">
+                <div class="zone-breadcrumb">
+                    <a href="/parking/" class="breadcrumb-link">
+                        <i class="fa-solid fa-arrow-left"></i> Back to All Zones
+                    </a>
+                </div>
+                <div class="zone-title-section">
+                    <div class="zone-badge status-{{ zone.status }}">
+                        {{ zone.get_status_display }}
+                    </div>
+                    <h1 class="zone-title">{{ zone.name }}</h1>
+                    <p class="zone-description">{{ zone.description|default:"Parking zone in Redemption City" }}</p>
+                </div>
+                <div class="zone-stats">
+                    <div class="zone-stat">
+                        <div class="stat-value available" id="zone-available">{{ zone.available_count }}</div>
+                        <div class="stat-label">Available</div>
+                    </div>
+                    <div class="zone-stat-divider"></div>
+                    <div class="zone-stat">
+                        <div class="stat-value occupied" id="zone-occupied">{{ zone.occupied_count }}</div>
+                        <div class="stat-label">Occupied</div>
+                    </div>
+                    <div class="zone-stat-divider"></div>
+                    <div class="zone-stat">
+                        <div class="stat-value total" id="zone-total">{{ zone.slots.count }}</div>
+                        <div class="stat-label">Total</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Active Parking Banner -->
+            {% if active_slot %}
+            <div class="active-parking-banner" id="active-banner">
+                <div class="banner-content">
+                    <div class="banner-icon">
+                        <i class="fa-solid fa-car"></i>
+                    </div>
+                    <div class="banner-info">
+                        <div class="banner-title">You're parked in Slot {{ active_slot.slot_number }}</div>
+                        <div class="banner-subtitle">{{ zone.name }} · Auto-releases in 24 hours</div>
+                    </div>
+                </div>
+                <form method="post" action="/parking/checkout/" class="checkout-form">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-secondary">
+                        <i class="fa-solid fa-right-from-bracket"></i> Check Out
+                    </button>
+                </form>
+            </div>
+            {% endif %}
+
+            <!-- Slots Grid -->
+            <div class="slots-grid" id="slots-grid">
+                {% for slot in slots %}
+                <div class="slot-card status-{{ slot.status }} {% if slot.session_token == request.session.parking_session_token %}is-mine{% endif %}" 
+                     data-slot-id="{{ slot.id }}" 
+                     data-slot-number="{{ slot.slot_number }}">
+                    {% if slot.status == 'available' and not active_slot %}
+                    <form method="post" action="/parking/checkin/{{ slot.id }}/" class="checkin-form">
+                        {% csrf_token %}
+                        <div class="slot-header">
+                            <div class="slot-number">{{ slot.slot_number }}</div>
+                            <div class="slot-status available">Available</div>
+                        </div>
+                        <div class="slot-body">
+                            <div class="slot-icon">
+                                <i class="fa-solid fa-square-parking"></i>
+                            </div>
+                            <div class="slot-info">
+                                <div class="slot-label">Tap to park</div>
+                            </div>
+                        </div>
+                        <div class="slot-footer">
+                            <input type="text" 
+                                   name="vehicle_plate" 
+                                   placeholder="Vehicle Plate (optional)" 
+                                   class="vehicle-input"
+                                   maxlength="20">
+                            <button type="submit" class="btn btn-primary btn-sm">
+                                <i class="fa-solid fa-check"></i> Check In
+                            </button>
+                        </div>
+                    </form>
+                    {% else %}
+                    <div class="slot-header">
+                        <div class="slot-number">{{ slot.slot_number }}</div>
+                        <div class="slot-status status-{{ slot.status }}">
+                            {% if slot.session_token == request.session.parking_session_token %}Your Slot{% else %}{{ slot.get_status_display }}{% endif %}
+                        </div>
+                    </div>
+                    <div class="slot-body">
+                        <div class="slot-icon">
+                            {% if slot.status == 'occupied' %}
+                                <i class="fa-solid fa-car"></i>
+                            {% elif slot.status == 'reserved' %}
+                                <i class="fa-solid fa-bookmark"></i>
+                            {% elif slot.status == 'blocked' %}
+                                <i class="fa-solid fa-ban"></i>
+                            {% else %}
+                                <i class="fa-solid fa-square-parking"></i>
+                            {% endif %}
+                        </div>
+                        <div class="slot-info">
+                            {% if slot.vehicle_plate %}
+                                <div class="slot-plate">{{ slot.vehicle_plate }}</div>
+                            {% endif %}
+                            {% if slot.occupied_at %}
+                                <div class="slot-time">
+                                    Since {{ slot.occupied_at|date:"H:i" }}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% if slot.session_token == request.session.parking_session_token %}
+                    <div class="slot-footer">
+                        <form method="post" action="/parking/checkout/" class="checkout-inline">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-secondary btn-sm">
+                                <i class="fa-solid fa-right-from-bracket"></i> Check Out
+                            </button>
+                        </form>
+                    </div>
+                    {% endif %}
+                    {% endif %}
+                </div>
+                {% empty %}
+                <div class="empty-state">
+                    <div class="empty-icon">
+                        <i class="fa-solid fa-parking"></i>
+                    </div>
+                    <h3>No Slots Available</h3>
+                    <p>This zone has no parking slots configured.</p>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Zone Footer -->
+            <div class="zone-footer">
+                <div class="footer-info">
+                    <i class="fa-solid fa-rotate"></i>
+                    <span>Slot availability updates every 4 seconds</span>
+                </div>
+                <div class="footer-status" id="poll-status">
+                    <span class="status-dot"></span>
+                    <span>Live</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <script src="{% static 'js/zone_detail.js' %}"></script>
+</body>
+
+</html>

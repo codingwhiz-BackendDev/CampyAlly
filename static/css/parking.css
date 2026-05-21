@@ -1,0 +1,587 @@
+/* ============================================================
+   PARKING DASHBOARD STYLES
+   Matches index.css design system
+   ============================================================ */
+
+/* PARKING DASHBOARD SECTION */
+#parking-dashboard {
+    padding: 80px 0;
+    min-height: calc(100vh - 80px);
+}
+
+.dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 40px;
+    margin-bottom: 48px;
+    animation: fadeInUp 0.8s ease-out;
+}
+
+.header-content {
+    flex: 1;
+}
+
+.header-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(16, 185, 129, 0.1);
+    color: var(--primary);
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 24px;
+    border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.dashboard-title {
+    font-family: 'Space Grotesk', 'DM Sans', sans-serif;
+    font-size: clamp(36px, 5vw, 52px);
+    font-weight: 700;
+    line-height: 1.2;
+    margin-bottom: 16px;
+}
+
+.dashboard-subtitle {
+    font-size: 16px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    max-width: 500px;
+}
+
+.header-stats {
+    display: flex;
+    gap: 24px;
+    animation: fadeInUp 0.8s ease-out 0.2s both;
+}
+
+.stat-card {
+    text-align: center;
+}
+
+.stat-value {
+    font-family: 'Space Grotesk', 'DM Sans', sans-serif;
+    font-size: 36px;
+    font-weight: 700;
+    color: var(--primary);
+    margin-bottom: 4px;
+}
+
+.stat-label {
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+.stat-divider {
+    width: 1px;
+    background: rgba(16, 185, 129, 0.2);
+}
+
+/* ACTIVE PARKING BANNER */
+.active-parking-banner {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 24px;
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(6, 182, 212, 0.1) 100%);
+    border: 2px solid rgba(16, 185, 129, 0.3);
+    border-radius: 16px;
+    padding: 24px 32px;
+    margin-bottom: 40px;
+    animation: fadeInUp 0.8s ease-out 0.3s both;
+}
+
+.banner-content {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.banner-icon {
+    width: 56px;
+    height: 56px;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 24px;
+}
+
+.banner-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.banner-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.banner-subtitle {
+    font-size: 14px;
+    color: var(--text-secondary);
+}
+
+.checkout-form {
+    display: flex;
+}
+
+/* ZONES GRID */
+.zones-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 24px;
+    margin-bottom: 40px;
+}
+
+.zone-card {
+    display: flex;
+    flex-direction: column;
+    background: white;
+    border: 2px solid rgba(0, 0, 0, 0.08);
+    border-radius: 20px;
+    padding: 28px;
+    text-decoration: none;
+    color: inherit;
+    transition: var(--transition);
+    position: relative;
+    overflow: hidden;
+    animation: fadeInUp 0.8s ease-out both;
+}
+
+.zone-card:nth-child(1) {
+    animation-delay: 0.1s;
+}
+
+.zone-card:nth-child(2) {
+    animation-delay: 0.15s;
+}
+
+.zone-card:nth-child(3) {
+    animation-delay: 0.2s;
+}
+
+.zone-card:nth-child(4) {
+    animation-delay: 0.25s;
+}
+
+.zone-card:nth-child(5) {
+    animation-delay: 0.3s;
+}
+
+.zone-card:nth-child(6) {
+    animation-delay: 0.35s;
+}
+
+.zone-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.3s ease;
+}
+
+.zone-card.status-open::before {
+    background: linear-gradient(90deg, var(--primary) 0%, var(--primary-light) 100%);
+}
+
+.zone-card.status-filling::before {
+    background: linear-gradient(90deg, var(--orange) 0%, #fb923c 100%);
+}
+
+.zone-card.status-full::before {
+    background: linear-gradient(90deg, var(--red) 0%, #f87171 100%);
+}
+
+.zone-card.status-closed::before {
+    background: linear-gradient(90deg, var(--text-secondary) 0%, #94a3b8 100%);
+}
+
+.zone-card:hover::before {
+    transform: scaleX(1);
+}
+
+.zone-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+}
+
+.zone-card.status-open:hover {
+    border-color: var(--primary);
+    box-shadow: 0 20px 40px rgba(16, 185, 129, 0.15);
+}
+
+.zone-card.status-filling:hover {
+    border-color: var(--orange);
+    box-shadow: 0 20px 40px rgba(249, 115, 22, 0.15);
+}
+
+.zone-card.status-full:hover {
+    border-color: var(--red);
+    box-shadow: 0 20px 40px rgba(239, 68, 68, 0.15);
+}
+
+.zone-card.status-closed:hover {
+    border-color: var(--text-secondary);
+    box-shadow: 0 20px 40px rgba(100, 116, 139, 0.15);
+}
+
+.zone-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 20px;
+}
+
+.zone-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    margin-bottom: 12px;
+    transition: var(--transition);
+}
+
+.zone-card.status-open .zone-icon {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(16, 185, 129, 0.05) 100%);
+    color: var(--primary);
+}
+
+.zone-card.status-filling .zone-icon {
+    background: linear-gradient(135deg, rgba(249, 115, 22, 0.15) 0%, rgba(249, 115, 22, 0.05) 100%);
+    color: var(--orange);
+}
+
+.zone-card.status-full .zone-icon {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(239, 68, 68, 0.05) 100%);
+    color: var(--red);
+}
+
+.zone-card.status-closed .zone-icon {
+    background: linear-gradient(135deg, rgba(100, 116, 139, 0.15) 0%, rgba(100, 116, 139, 0.05) 100%);
+    color: var(--text-secondary);
+}
+
+.zone-card:hover .zone-icon {
+    transform: scale(1.1) rotate(-5deg);
+}
+
+.zone-card.status-open:hover .zone-icon {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+    color: white;
+}
+
+.zone-card.status-filling:hover .zone-icon {
+    background: linear-gradient(135deg, var(--orange) 0%, #fb923c 100%);
+    color: white;
+}
+
+.zone-card.status-full:hover .zone-icon {
+    background: linear-gradient(135deg, var(--red) 0%, #f87171 100%);
+    color: white;
+}
+
+.zone-card.status-closed:hover .zone-icon {
+    background: linear-gradient(135deg, var(--text-secondary) 0%, #94a3b8 100%);
+    color: white;
+}
+
+.zone-info {
+    flex: 1;
+}
+
+.zone-name {
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 4px;
+    color: var(--text-primary);
+}
+
+.zone-desc {
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+.zone-badge {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 12px;
+    border-radius: 20px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.zone-badge.status-open {
+    background: rgba(16, 185, 129, 0.15);
+    color: var(--primary);
+}
+
+.zone-badge.status-filling {
+    background: rgba(249, 115, 22, 0.15);
+    color: var(--orange);
+}
+
+.zone-badge.status-full {
+    background: rgba(239, 68, 68, 0.15);
+    color: var(--red);
+}
+
+.zone-badge.status-closed {
+    background: rgba(100, 116, 139, 0.15);
+    color: var(--text-secondary);
+}
+
+.zone-metrics {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 20px;
+    padding: 16px;
+    background: rgba(16, 185, 129, 0.03);
+    border-radius: 12px;
+}
+
+.metric-item {
+    flex: 1;
+    text-align: center;
+}
+
+.metric-value {
+    font-family: 'Space Grotesk', 'DM Sans', sans-serif;
+    font-size: 24px;
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+
+.metric-value.available {
+    color: var(--primary);
+}
+
+.metric-value.occupied {
+    color: var(--orange);
+}
+
+.metric-value.total {
+    color: var(--text-secondary);
+}
+
+.metric-label {
+    font-size: 11px;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.metric-divider {
+    width: 1px;
+    background: rgba(16, 185, 129, 0.2);
+}
+
+.zone-progress {
+    margin-bottom: 16px;
+}
+
+.progress-bar {
+    height: 8px;
+    background: #f1f5f9;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 8px;
+}
+
+.progress-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.5s ease;
+}
+
+.progress-fill.status-open {
+    background: linear-gradient(90deg, var(--primary) 0%, var(--primary-light) 100%);
+}
+
+.progress-fill.status-filling {
+    background: linear-gradient(90deg, var(--orange) 0%, #fb923c 100%);
+}
+
+.progress-fill.status-full {
+    background: linear-gradient(90deg, var(--red) 0%, #f87171 100%);
+}
+
+.progress-fill.status-closed {
+    background: linear-gradient(90deg, var(--text-secondary) 0%, #94a3b8 100%);
+}
+
+.progress-text {
+    font-size: 12px;
+    color: var(--text-secondary);
+    text-align: right;
+}
+
+.zone-arrow {
+    position: absolute;
+    right: 24px;
+    bottom: 24px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    color: var(--text-secondary);
+    transition: var(--transition);
+    opacity: 0;
+    transform: translateX(-10px);
+}
+
+.zone-card:hover .zone-arrow {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.zone-card.status-open .zone-arrow {
+    background: rgba(16, 185, 129, 0.1);
+    color: var(--primary);
+}
+
+.zone-card.status-filling .zone-arrow {
+    background: rgba(249, 115, 22, 0.1);
+    color: var(--orange);
+}
+
+.zone-card.status-full .zone-arrow {
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--red);
+}
+
+.zone-card.status-closed .zone-arrow {
+    background: rgba(100, 116, 139, 0.1);
+    color: var(--text-secondary);
+}
+
+/* EMPTY STATE */
+.empty-state {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 80px 40px;
+    background: white;
+    border: 2px dashed rgba(0, 0, 0, 0.1);
+    border-radius: 20px;
+    animation: fadeInUp 0.8s ease-out;
+}
+
+.empty-icon {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 24px;
+    background: rgba(16, 185, 129, 0.1);
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    color: var(--primary);
+}
+
+.empty-state h3 {
+    font-size: 24px;
+    font-weight: 700;
+    margin-bottom: 12px;
+    color: var(--text-primary);
+}
+
+.empty-state p {
+    font-size: 16px;
+    color: var(--text-secondary);
+}
+
+/* DASHBOARD FOOTER */
+.dashboard-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 24px;
+    border-top: 1px solid rgba(16, 185, 129, 0.2);
+    animation: fadeInUp 0.8s ease-out 0.4s both;
+}
+
+.footer-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    color: var(--text-secondary);
+}
+
+.footer-info i {
+    color: var(--primary);
+}
+
+.footer-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--primary);
+    animation: pulse 2s ease-in-out infinite;
+}
+
+/* RESPONSIVE */
+@media (max-width: 768px) {
+    .dashboard-header {
+        flex-direction: column;
+        gap: 24px;
+    }
+
+    .header-stats {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .active-parking-banner {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .banner-content {
+        flex-direction: column;
+    }
+
+    .checkout-form {
+        width: 100%;
+    }
+
+    .checkout-form .btn {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .zones-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .dashboard-footer {
+        flex-direction: column;
+        gap: 16px;
+        text-align: center;
+    }
+}
