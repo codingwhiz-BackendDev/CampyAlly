@@ -1,0 +1,402 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CampEase — Next-Gen Civic Operations</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link
+        href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@600;700&family=DM+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="{% static 'css/index.css' %}">
+</head>
+
+<body>
+    <!-- ANIMATED BACKGROUND ELEMENTS -->
+    <div class="bg-orbs">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+    </div>
+
+    <!-- NAV -->
+    <nav class="site-nav">
+        <div class="container">
+            <div class="nav-inner">
+                <a href="#" class="nav-logo">
+                    <div class="nav-logo-mark">
+                        <div class="logo-glow"></div>
+                        <i class="fa-solid fa-rocket"></i>
+                    </div>
+                    <div class="logo-text">
+                        <span class="logo-main">CampEase</span>
+                        <span class="logo-badge">v2.0</span>
+                    </div>
+                </a>
+                <div class="nav-links-wrap">
+                    <a href="#hero" class="nav-link active">Home</a>
+                    <a href="#metrics" class="nav-link">Metrics</a>
+                    <a href="#features" class="nav-link">Features</a>
+                    <a href="#city-map" class="nav-link">Live Map</a>
+                    <a href="#how-it-works" class="nav-link">How It Works</a>
+                </div>
+                <div class="nav-actions">
+                    <button class="btn btn-primary"><i class="fa-solid fa-sparkles"></i> Get Started</button>
+                    <button class="hamburger" id="hamburgerBtn"
+                        aria-label="Toggle menu"><span></span><span></span><span></span></button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- HERO SECTION -->
+    <section id="hero">
+        <div class="hero-background">
+            <div class="gradient-mesh"></div>
+        </div>
+        <div class="container">
+            <div class="hero-layout">
+                <div class="hero-text">
+                    <div class="hero-badge">
+                        <span class="live-dot"></span>
+                        <span>LIVE — Powering Redemption City</span>
+                    </div>
+                    <h1 class="hero-title">
+                        Redemption City's <span class="gradient-text">smart command center</span>
+                        <br>for safer, smoother operations
+                    </h1>
+                    <p class="hero-desc">Your all-in-one dashboard for parking, emergencies, and lost person recovery across Redemption City. Built for residents, by residents.</p>
+
+                    <div class="hero-btns">
+                        <button class="btn btn-primary btn-lg btn-pulse">
+                            <i class="fa-solid fa-play"></i> Watch Demo
+                        </button>
+                        <button class="btn btn-secondary btn-lg">
+                            <i class="fa-solid fa-arrow-right"></i> Explore
+                        </button>
+                    </div>
+
+                    <div class="stats-bar">
+                        <div class="stat-item">
+                            <div class="stat-value">99.9%</div>
+                            <div class="stat-label">Uptime</div>
+                        </div>
+                        <div class="stat-divider"></div>
+                        <div class="stat-item">
+                            <div class="stat-value">500K+</div>
+                            <div class="stat-label">Concurrent Users</div>
+                        </div>
+                        <div class="stat-divider"></div>
+                        <div class="stat-item">
+                            <div class="stat-value">6</div>
+                            <div class="stat-label">AI Modules</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="hero-visual">
+                    <div class="visual-card">
+                        <div class="card-header">
+                            <div class="card-dots">
+                                <span class="dot"></span>
+                                <span class="dot"></span>
+                                <span class="dot"></span>
+                            </div>
+                            <span class="card-title">Live Dashboard</span>
+                        </div>
+                        <div class="card-body">
+                            <div class="dashboard-preview">
+                                <div class="preview-grid">
+                                    <div class="preview-item">
+                                        <div class="preview-icon"><i class="fa-solid fa-chart-line"></i></div>
+                                        <div class="preview-stat">
+                                            <div class="preview-num">47,382</div>
+                                            <div class="preview-label">Active</div>
+                                        </div>
+                                    </div>
+                                    <div class="preview-item">
+                                        <div class="preview-icon"><i class="fa-solid fa-car"></i></div>
+                                        <div class="preview-stat">
+                                            <div class="preview-num">1,247</div>
+                                            <div class="preview-label">Parking</div>
+                                        </div>
+                                    </div>
+                                    <div class="preview-item">
+                                        <div class="preview-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                                        <div class="preview-stat">
+                                            <div class="preview-num">3</div>
+                                            <div class="preview-label">Issues</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <canvas id="miniMap" style="width: 100%; height: 200px; margin-top: 16px;"></canvas>
+                            </div>
+                        </div>
+                        <div class="card-glow"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SERVICE SELECTION SECTION -->
+    <section id="service-selection">
+        <div class="container">
+            <div class="selection-header">
+                <div class="selection-badge">
+                    <i class="fa-solid fa-hand-pointer"></i>
+                    <span>Select Your Service</span>
+                </div>
+                <h2>Redemption City Services</h2>
+                <p class="selection-subtitle">Welcome to Redemption City's central hub. Select a service below to get started with parking, emergency response, or lost person recovery.</p>
+            </div>
+            
+            <div class="selection-cards">
+                <a href="/parking" class="selection-card parking-card">
+                    <div class="selection-icon">
+                        <i class="fa-solid fa-square-parking"></i>
+                    </div>
+                    <h3>Parking</h3>
+                    <p>Find and reserve parking spots in real-time</p>
+                    <div class="selection-arrow">
+                        <i class="fa-solid fa-arrow-right"></i>
+                    </div>
+                </a>
+
+                <a href="/emergency" class="selection-card emergency-card">
+                    <div class="selection-icon">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                    </div>
+                    <h3>Emergency</h3>
+                    <p>Report emergencies and get immediate help</p>
+                    <div class="selection-arrow">
+                        <i class="fa-solid fa-arrow-right"></i>
+                    </div>
+                </a>
+
+                <a href="/lost-person" class="selection-card lost-card">
+                    <div class="selection-icon">
+                        <i class="fa-solid fa-user-magnifying-glass"></i>
+                    </div>
+                    <h3>Lost Person / Recovery</h3>
+                    <p>Report or search for lost persons</p>
+                    <div class="selection-arrow">
+                        <i class="fa-solid fa-arrow-right"></i>
+                    </div>
+                </a>
+            </div>
+
+            <div class="selection-note">
+                <i class="fa-solid fa-circle-info"></i>
+                <span>You must select one of the options above to proceed with the service</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- METRICS SECTION -->
+    <section id="metrics">
+        <div class="container">
+            <div class="section-header">
+                <h2>Redemption City Live Feed</h2>
+                <p>Real-time metrics from across Redemption City's infrastructure</p>
+            </div>
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="card-icon green">
+                        <i class="fa-solid fa-square-parking"></i>
+                    </div>
+                    <div class="metric-label">Parking</div>
+                    <div class="metric-value">847</div>
+                    <div class="metric-sub">Available slots</div>
+                    <div class="metric-bar">
+                        <div class="bar-fill green" style="width: 68%"></div>
+                    </div>
+                    <div class="metric-status ok"><span></span> Optimal</div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="card-icon orange">
+                        <i class="fa-solid fa-people-group"></i>
+                    </div>
+                    <div class="metric-label">Crowd Level</div>
+                    <div class="metric-value">74%</div>
+                    <div class="metric-sub">Arena West zone</div>
+                    <div class="metric-bar">
+                        <div class="bar-fill orange" style="width: 74%"></div>
+                    </div>
+                    <div class="metric-status warn"><span></span> High</div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="card-icon blue">
+                        <i class="fa-solid fa-road"></i>
+                    </div>
+                    <div class="metric-label">Traffic Index</div>
+                    <div class="metric-value">62</div>
+                    <div class="metric-sub">Gate 4 bottleneck</div>
+                    <div class="metric-bar">
+                        <div class="bar-fill blue" style="width: 62%"></div>
+                    </div>
+                    <div class="metric-status warn"><span></span> Monitor</div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="card-icon red">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                    </div>
+                    <div class="metric-label">Emergencies</div>
+                    <div class="metric-value">3</div>
+                    <div class="metric-sub">Active incidents</div>
+                    <div class="metric-bar">
+                        <div class="bar-fill red" style="width: 12%"></div>
+                    </div>
+                    <div class="metric-status alert"><span></span> Attention</div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="card-icon purple">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                    </div>
+                    <div class="metric-label">Lost Persons</div>
+                    <div class="metric-value">2</div>
+                    <div class="metric-sub">Search active</div>
+                    <div class="metric-bar">
+                        <div class="bar-fill purple" style="width: 8%"></div>
+                    </div>
+                    <div class="metric-status warn"><span></span> Active</div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="card-icon cyan">
+                        <i class="fa-solid fa-network-wired"></i>
+                    </div>
+                    <div class="metric-label">API Health</div>
+                    <div class="metric-value">99.9%</div>
+                    <div class="metric-sub">System uptime</div>
+                    <div class="metric-bar">
+                        <div class="bar-fill cyan" style="width: 99%"></div>
+                    </div>
+                    <div class="metric-status ok"><span></span> Excellent</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FEATURES SECTION -->
+    <section id="features">
+        <div class="container">
+            <div class="section-header">
+                <h2>Redemption City Features</h2>
+                <p>Everything you need to navigate and thrive in Redemption City</p>
+            </div>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-header">
+                        <div class="feature-icon"><i class="fa-solid fa-car"></i></div>
+                        <div class="feature-badge">Smart</div>
+                    </div>
+                    <h3>Smart Parking</h3>
+                    <p>AI-powered parking allocation with real-time availability and dynamic pricing.</p>
+                    <a href="#" class="feature-link">Learn more →</a>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-header">
+                        <div class="feature-icon"><i class="fa-solid fa-users"></i></div>
+                        <div class="feature-badge">Intelligent</div>
+                    </div>
+                    <h3>Crowd Control</h3>
+                    <p>Heatmaps and density alerts to prevent overcrowding and ensure safety.</p>
+                    <a href="#" class="feature-link">Learn more →</a>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-header">
+                        <div class="feature-icon"><i class="fa-solid fa-bell"></i></div>
+                        <div class="feature-badge">Critical</div>
+                    </div>
+                    <h3>Emergency Response</h3>
+                    <p>Instant alerts and optimized routing for first responders and emergency teams.</p>
+                    <a href="#" class="feature-link">Learn more →</a>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-header">
+                        <div class="feature-icon"><i class="fa-solid fa-map-location-dot"></i></div>
+                        <div class="feature-badge">Visual</div>
+                    </div>
+                    <h3>Live Mapping</h3>
+                    <p>Real-time 3D visualization of your entire city infrastructure and operations.</p>
+                    <a href="#" class="feature-link">Learn more →</a>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-header">
+                        <div class="feature-icon"><i class="fa-solid fa-magnifying-glass"></i></div>
+                        <div class="feature-badge">Advanced</div>
+                    </div>
+                    <h3>Lost & Found</h3>
+                    <p>AI-assisted person recovery using crowd data and mobile integration.</p>
+                    <a href="#" class="feature-link">Learn more →</a>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-header">
+                        <div class="feature-icon"><i class="fa-solid fa-bolt"></i></div>
+                        <div class="feature-badge">Powerful</div>
+                    </div>
+                    <h3>Lightning Fast</h3>
+                    <p>Sub-100ms response times with 99.9% uptime SLA guarantee.</p>
+                    <a href="#" class="feature-link">Learn more →</a>
+                </div>
+            </div>
+        </div>
+    </section>
+ 
+
+    <!-- FOOTER -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h4>CampEase</h4>
+                    <p>Redemption City's official civic operations platform</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Product</h4>
+                    <ul>
+                        <li><a href="#">Features</a></li>
+                        <li><a href="#">Pricing</a></li>
+                        <li><a href="#">Security</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Company</h4>
+                    <ul>
+                        <li><a href="#">About</a></li>
+                        <li><a href="#">Blog</a></li>
+                        <li><a href="#">Careers</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Legal</h4>
+                    <ul>
+                        <li><a href="#">Privacy</a></li>
+                        <li><a href="#">Terms</a></li>
+                        <li><a href="#">Contact</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 CampEase. Proudly serving Redemption City.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="{% static 'js/index.js' %}"></script>
+</body>
+
+</html>
