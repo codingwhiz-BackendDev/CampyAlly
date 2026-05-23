@@ -11,8 +11,138 @@
         href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@600;700&family=DM+Mono:wght@400;500&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
     <link rel="stylesheet" href="{% static 'css/index.css' %}">
     <link rel="stylesheet" href="{% static 'css/parking.css' %}">
+
+    <style>
+        /* ── Geofence nudge banner ───────────────────────────────────────── */
+        #geo-nudge {
+            display: none;                 /* shown by JS when near a zone   */
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 9999;
+            background: #1a1a2e;
+            border: 1px solid rgba(99, 179, 237, 0.5);
+            border-radius: 14px;
+            padding: 16px 20px;
+            min-width: 320px;
+            max-width: 90vw;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+            animation: nudge-in 0.3s ease;
+        }
+        @keyframes nudge-in {
+            from { opacity: 0; transform: translateX(-50%) translateY(12px); }
+            to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+        #geo-nudge .nudge-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        #geo-nudge .nudge-icon {
+            width: 40px; height: 40px;
+            border-radius: 10px;
+            background: rgba(99,179,237,0.15);
+            display: flex; align-items: center; justify-content: center;
+            color: #63b3ed; font-size: 18px;
+            flex-shrink: 0;
+        }
+        #geo-nudge .nudge-text strong {
+            display: block;
+            color: #e2e8f0;
+            font-size: 14px;
+            font-family: 'Space Grotesk', sans-serif;
+        }
+        #geo-nudge .nudge-text span {
+            font-size: 12px;
+            color: #718096;
+        }
+        #geo-nudge .nudge-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+        }
+        #geo-nudge .nudge-btn-yes {
+            flex: 1;
+            padding: 9px 16px;
+            background: #63b3ed;
+            color: #0a0a1a;
+            border: none;
+            border-radius: 8px;
+            font-weight: 700;
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 13px;
+            cursor: pointer;
+            text-decoration: none;
+            text-align: center;
+            transition: background 0.15s;
+        }
+        #geo-nudge .nudge-btn-yes:hover { background: #4299e1; }
+        #geo-nudge .nudge-btn-dismiss {
+            padding: 9px 14px;
+            background: transparent;
+            color: #718096;
+            border: 1px solid #2d3748;
+            border-radius: 8px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        #geo-nudge .nudge-btn-dismiss:hover { color: #a0aec0; border-color: #4a5568; }
+
+        /* ── Per-zone map ────────────────────────────────────────────────── */
+        .zone-map-wrap {
+            margin-top: 14px;
+            border-radius: 10px;
+            overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.07);
+        }
+        .zone-map {
+            height: 160px;
+            width: 100%;
+            background: #111;
+        }
+        .zone-map-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 12px;
+            background: rgba(255,255,255,0.03);
+            font-size: 12px;
+            color: #718096;
+        }
+        .zone-map-footer a {
+            color: #63b3ed;
+            text-decoration: none;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            transition: color 0.15s;
+        }
+        .zone-map-footer a:hover { color: #90cdf4; }
+        .no-coords-notice {
+            height: 160px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            background: rgba(255,255,255,0.02);
+            color: #4a5568;
+            font-size: 13px;
+            border-radius: 10px;
+            border: 1px dashed #2d3748;
+            margin-top: 14px;
+        }
+        .no-coords-notice i { font-size: 22px; }
+    </style>
 </head>
 
 <body>
@@ -48,6 +178,23 @@
         </div>
     </nav>
 
+    <!-- GEOFENCE NUDGE BANNER (shown by JS when user is near a zone) -->
+    <div id="geo-nudge">
+        <div class="nudge-row">
+            <div class="nudge-icon"><i class="fa-solid fa-location-dot"></i></div>
+            <div class="nudge-text">
+                <strong id="nudge-title">You appear to be near Zone A</strong>
+                <span id="nudge-sub">Tap below to view available slots</span>
+            </div>
+        </div>
+        <div class="nudge-actions">
+            <a href="#" id="nudge-btn-yes" class="nudge-btn-yes">
+                <i class="fa-solid fa-square-parking"></i> View Zone & Check In
+            </a>
+            <button onclick="dismissNudge()" class="nudge-btn-dismiss">Dismiss</button>
+        </div>
+    </div>
+
     <!-- PARKING DASHBOARD SECTION -->
     <section id="parking-dashboard">
         <div class="container">
@@ -64,7 +211,12 @@
                 </div>
                 <div class="header-stats">
                     <div class="stat-card">
-                        <div class="stat-value" id="total-available">0</div>
+                        <div class="stat-value" id="total-available">
+                            {% with total=0 %}
+                                {% for zone in zones %}{% with total=total|add:zone.available_count %}{% endwith %}{% endfor %}
+                            {% endwith %}
+                            {{ zones|length }}
+                        </div>
                         <div class="stat-label">Available Spots</div>
                     </div>
                     <div class="stat-divider"></div>
@@ -99,51 +251,75 @@
             <!-- Zones Grid -->
             <div class="zones-grid" id="zones-grid">
                 {% for zone in zones %}
-                <a href="/parking/zone/{{ zone.id }}/" class="zone-card status-{{ zone.status }}" data-zone-id="{{ zone.id }}">
-                    <div class="zone-card-header">
-                        <div class="zone-icon">
-                            <i class="fa-solid fa-square-parking"></i>
-                        </div>
-                        <div class="zone-info">
-                            <h3 class="zone-name">{{ zone.name }}</h3>
-                            <p class="zone-desc">{{ zone.description|default:"Parking zone" }}</p>
-                        </div>
-                        <div class="zone-badge status-{{ zone.status }}">
-                            {{ zone.get_status_display }}
-                        </div>
-                    </div>
-
-                    <div class="zone-metrics">
-                        <div class="metric-item">
-                            <div class="metric-value available" id="zone-{{ zone.id }}-available">{{ zone.available_count }}</div>
-                            <div class="metric-label">Available</div>
-                        </div>
-                        <div class="metric-divider"></div>
-                        <div class="metric-item">
-                            <div class="metric-value occupied" id="zone-{{ zone.id }}-occupied">{{ zone.occupied_count }}</div>
-                            <div class="metric-label">Occupied</div>
-                        </div>
-                        <div class="metric-divider"></div>
-                        <div class="metric-item">
-                            <div class="metric-value total" id="zone-{{ zone.id }}-total">{{ zone.slots.count }}</div>
-                            <div class="metric-label">Total</div>
-                        </div>
-                    </div>
-
-                    <div class="zone-progress">
-                        <div class="progress-bar">
-                            <div class="progress-fill status-{{ zone.status }}" 
-                                 id="zone-{{ zone.id }}-bar"
-                                 style="width: {{ zone.occupancy_percent }}%;">
+                <div class="zone-card-wrap">
+                    <a href="/parking/zone/{{ zone.id }}/" class="zone-card status-{{ zone.status }}" data-zone-id="{{ zone.id }}">
+                        <div class="zone-card-header">
+                            <div class="zone-icon">
+                                <i class="fa-solid fa-square-parking"></i>
+                            </div>
+                            <div class="zone-info">
+                                <h3 class="zone-name">{{ zone.name }}</h3>
+                                <p class="zone-desc">{{ zone.description|default:"Parking zone" }}</p>
+                            </div>
+                            <div class="zone-badge status-{{ zone.status }}">
+                                {{ zone.get_status_display }}
                             </div>
                         </div>
-                        <div class="progress-text">{{ zone.occupancy_percent }}% full</div>
-                    </div>
 
-                    <div class="zone-arrow">
-                        <i class="fa-solid fa-arrow-right"></i>
+                        <div class="zone-metrics">
+                            <div class="metric-item">
+                                <div class="metric-value available" id="zone-{{ zone.id }}-available">{{ zone.available_count }}</div>
+                                <div class="metric-label">Available</div>
+                            </div>
+                            <div class="metric-divider"></div>
+                            <div class="metric-item">
+                                <div class="metric-value occupied" id="zone-{{ zone.id }}-occupied">{{ zone.occupied_count }}</div>
+                                <div class="metric-label">Occupied</div>
+                            </div>
+                            <div class="metric-divider"></div>
+                            <div class="metric-item">
+                                <div class="metric-value total" id="zone-{{ zone.id }}-total">{{ zone.slots.count }}</div>
+                                <div class="metric-label">Total</div>
+                            </div>
+                        </div>
+
+                        <div class="zone-progress">
+                            <div class="progress-bar">
+                                <div class="progress-fill status-{{ zone.status }}"
+                                     id="zone-{{ zone.id }}-bar"
+                                     style="width: {{ zone.occupancy_percent }}%;">
+                                </div>
+                            </div>
+                            <div class="progress-text">{{ zone.occupancy_percent }}% full</div>
+                        </div>
+
+                        <div class="zone-arrow">
+                            <i class="fa-solid fa-arrow-right"></i>
+                        </div>
+                    </a>
+
+                    <!-- Map section — outside the <a> tag so clicks don't navigate -->
+                    {% if zone.latitude != 0.0 or zone.longitude != 0.0 %}
+                    <div class="zone-map-wrap">
+                        <div class="zone-map" id="map-{{ zone.id }}"
+                             data-lat="{{ zone.latitude }}"
+                             data-lng="{{ zone.longitude }}"
+                             data-name="{{ zone.name }}">
+                        </div>
+                        <div class="zone-map-footer">
+                            <span><i class="fa-solid fa-location-dot"></i> {{ zone.latitude|floatformat:4 }}, {{ zone.longitude|floatformat:4 }}</span>
+                            <a href="https://www.openstreetmap.org/directions?from=&to={{ zone.latitude }},{{ zone.longitude }}" target="_blank" rel="noopener">
+                                <i class="fa-solid fa-diamond-turn-right"></i> Get Directions
+                            </a>
+                        </div>
                     </div>
-                </a>
+                    {% else %}
+                    <div class="no-coords-notice">
+                        <i class="fa-solid fa-map-pin"></i>
+                        <span>No coordinates set — update in admin panel</span>
+                    </div>
+                    {% endif %}
+                </div>
                 {% empty %}
                 <div class="empty-state">
                     <div class="empty-icon">
@@ -168,7 +344,14 @@
         </div>
     </section>
 
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <!-- Zone geo data from Django (safe JSON) -->
+    <script>
+        const ZONES_GEO = {{ zones_geo|safe }};
+    </script>
+
     <script src="{% static 'js/parking_dashboard.js' %}"></script>
 </body>
-
-</html> 
+</html>

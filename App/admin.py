@@ -4,16 +4,6 @@ from django.utils import timezone
 from .models import ParkingZone, ParkingSlot, CheckInSession
 
 
-# ── Inline slots inside zone edit page ───────────────────────────────────────
-
-class ParkingSlotInline(admin.TabularInline):
-    model   = ParkingSlot
-    extra   = 0
-    fields  = ('slot_number', 'status', 'vehicle_plate', 'occupied_at', 'auto_release_at')
-    readonly_fields = ('occupied_at',)
-    ordering = ['slot_number']
-
-
 # ── Zone admin ────────────────────────────────────────────────────────────────
 
 @admin.register(ParkingZone)
@@ -25,7 +15,8 @@ class ParkingZoneAdmin(admin.ModelAdmin):
     list_filter   = ('status', 'manual_override')
     search_fields = ('name',)
     readonly_fields = ('status', 'updated_at')
-    inlines       = [ParkingSlotInline]
+    # Removed inline to prevent "needs primary key" error when creating new zones
+    # Use the security dashboard at /security/ to manage slots instead
 
     fieldsets = (
         ('Zone Info', {

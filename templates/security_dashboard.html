@@ -1,0 +1,719 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Security Control Panel — CampEase</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="{% static 'css/security.css' %}">
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+        <div class="logo-mark">
+            <i class="fa-solid fa-shield-halved"></i>
+        </div>
+        <div class="logo-text">
+            <span class="logo-main">CampEase</span>
+            <span class="logo-sub">Security Panel</span>
+        </div>
+    </div>
+
+    <nav class="sidebar-nav">
+        <a href="#" class="nav-item active" data-section="overview">
+            <i class="fa-solid fa-gauge-high"></i>
+            <span>Overview</span>
+        </a>
+        <a href="#" class="nav-item" data-section="zones">
+            <i class="fa-solid fa-map-location-dot"></i>
+            <span>Parking Zones</span>
+        </a>
+        <a href="#" class="nav-item" data-section="slots">
+            <i class="fa-solid fa-car"></i>
+            <span>Parking Slots</span>
+        </a>
+        <a href="#" class="nav-item" data-section="activity">
+            <i class="fa-solid fa-clock-rotate-left"></i>
+            <span>Activity Log</span>
+        </a>
+    </nav>
+
+    <div class="sidebar-footer">
+        <div class="user-info">
+            <div class="user-avatar">
+                <i class="fa-solid fa-user-shield"></i>
+            </div>
+            <div class="user-detail">
+                <span class="user-name">Security Staff</span>
+                <span class="user-role">Redemption City</span>
+            </div>
+        </div>
+    </div>
+</aside>
+
+<!-- MAIN -->
+<main class="main-content" id="mainContent">
+    <!-- TOP BAR -->
+    <header class="topbar">
+        <div class="topbar-left">
+            <button class="sidebar-toggle" id="sidebarToggle">
+                <i class="fa-solid fa-bars"></i>
+            </button>
+            <div class="page-title">
+                <h1 id="pageTitle">Overview</h1>
+                <p class="page-subtitle" id="pageSubtitle">Real-time parking status across Redemption City</p>
+            </div>
+        </div>
+        <div class="topbar-right">
+            <div class="live-badge">
+                <span class="pulse-dot"></span>
+                <span>LIVE</span>
+            </div>
+            <span class="timestamp" id="timestamp"></span>
+        </div>
+    </header>
+
+    <!-- ====================== OVERVIEW SECTION ====================== -->
+    <section class="content-section active" id="section-overview">
+        <!-- Summary cards -->
+        <div class="summary-cards" id="summaryCards">
+            <!-- Filled by JS -->
+        </div>
+
+        <!-- Zone status grid -->
+        <div class="section-card">
+            <div class="card-head">
+                <h2><i class="fa-solid fa-map"></i> All Zones — Live Status</h2>
+                <button class="btn btn-sm btn-ghost" onclick="refreshData()">
+                    <i class="fa-solid fa-arrows-rotate"></i> Refresh
+                </button>
+            </div>
+            <div class="zone-grid" id="zoneGrid">
+                <!-- Filled by JS -->
+            </div>
+        </div>
+    </section>
+
+    <!-- ====================== ZONES SECTION ====================== -->
+    <section class="content-section" id="section-zones">
+        <div class="section-card">
+            <div class="card-head">
+                <h2><i class="fa-solid fa-map-location-dot"></i> Manage Parking Zones</h2>
+                <button class="btn btn-primary" onclick="openZoneModal()">
+                    <i class="fa-solid fa-plus"></i> Add Zone
+                </button>
+            </div>
+            <div class="table-wrap">
+                <table class="data-table" id="zonesTable">
+                    <thead>
+                        <tr>
+                            <th>Zone Name</th>
+                            <th>Description</th>
+                            <th>Capacity</th>
+                            <th>Occupied</th>
+                            <th>Available</th>
+                            <th>Status</th>
+                            <th>Override</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="zonesBody">
+                        <!-- Filled by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <!-- ====================== SLOTS SECTION ====================== -->
+    <section class="content-section" id="section-slots">
+        <div class="section-card">
+            <div class="card-head">
+                <h2><i class="fa-solid fa-car"></i> Manage Parking Slots</h2>
+                <div class="head-actions">
+                    <select class="form-select" id="slotZoneFilter" onchange="loadSlots()">
+                        <option value="">All Zones</option>
+                    </select>
+                    <button class="btn btn-primary" onclick="openSlotModal()">
+                        <i class="fa-solid fa-plus"></i> Add Slot
+                    </button>
+                </div>
+            </div>
+            <div class="table-wrap">
+                <table class="data-table" id="slotsTable">
+                    <thead>
+                        <tr>
+                            <th>Slot #</th>
+                            <th>Zone</th>
+                            <th>Status</th>
+                            <th>Vehicle Plate</th>
+                            <th>Occupied At</th>
+                            <th>Auto-Release</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="slotsBody">
+                        <!-- Filled by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <!-- ====================== ACTIVITY LOG SECTION ====================== -->
+    <section class="content-section" id="section-activity">
+        <div class="section-card">
+            <div class="card-head">
+                <h2><i class="fa-solid fa-clock-rotate-left"></i> Recent Activity</h2>
+                <button class="btn btn-sm btn-ghost" onclick="loadActivity()">
+                    <i class="fa-solid fa-arrows-rotate"></i> Refresh
+                </button>
+            </div>
+            <div class="table-wrap">
+                <table class="data-table" id="activityTable">
+                    <thead>
+                        <tr>
+                            <th>Session</th>
+                            <th>Slot</th>
+                            <th>Vehicle</th>
+                            <th>Checked In</th>
+                            <th>Checked Out</th>
+                            <th>Active</th>
+                        </tr>
+                    </thead>
+                    <tbody id="activityBody">
+                        <!-- Filled by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+</main>
+
+<!-- ====================== ZONE MODAL ====================== -->
+<div class="modal-overlay" id="zoneModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h3 id="zoneModalTitle">Add Parking Zone</h3>
+            <button class="modal-close" onclick="closeZoneModal()"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <form id="zoneForm" onsubmit="saveZone(event)">
+            <input type="hidden" id="zoneId" value="">
+            <div class="form-group">
+                <label for="zoneName">Zone Name</label>
+                <input type="text" id="zoneName" class="form-input" placeholder="e.g. Camp Hospital Parking" required>
+            </div>
+            <div class="form-group">
+                <label for="zoneDesc">Description</label>
+                <input type="text" id="zoneDesc" class="form-input" placeholder="e.g. Near the main auditorium">
+            </div>
+            <div class="form-group">
+                <label for="zoneCap">Capacity (total slots)</label>
+                <input type="number" id="zoneCap" class="form-input" min="1" value="50" required>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="zoneOverride">
+                        <input type="checkbox" id="zoneOverride"> Manual Override
+                    </label>
+                </div>
+                <div class="form-group">
+                    <label for="zoneOverrideStatus">Override Status</label>
+                    <select id="zoneOverrideStatus" class="form-select">
+                        <option value="">— Auto —</option>
+                        <option value="open">Open</option>
+                        <option value="filling">Filling</option>
+                        <option value="full">Full</option>
+                        <option value="closed">Closed</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-actions">
+                <button type="button" class="btn btn-ghost" onclick="closeZoneModal()">Cancel</button>
+                <button type="submit" class="btn btn-primary" id="zoneSubmitBtn">
+                    <i class="fa-solid fa-check"></i> Save Zone
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ====================== SLOT MODAL ====================== -->
+<div class="modal-overlay" id="slotModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h3 id="slotModalTitle">Add Parking Slot</h3>
+            <button class="modal-close" onclick="closeSlotModal()"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <form id="slotForm" onsubmit="saveSlot(event)">
+            <input type="hidden" id="slotId" value="">
+            <div class="form-group">
+                <label for="slotZone">Zone</label>
+                <select id="slotZone" class="form-select" required>
+                    <option value="">Select Zone</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="slotNumber">Slot Number</label>
+                <input type="text" id="slotNumber" class="form-input" placeholder="e.g. A-01" required>
+            </div>
+            <div class="form-group">
+                <label for="slotStatus">Status</label>
+                <select id="slotStatus" class="form-select">
+                    <option value="available">Available</option>
+                    <option value="occupied">Occupied</option>
+                    <option value="reserved">Reserved</option>
+                    <option value="blocked">Blocked</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="slotPlate">Vehicle Plate (optional)</label>
+                <input type="text" id="slotPlate" class="form-input" placeholder="e.g. ABC-1234">
+            </div>
+
+            <!-- Bulk add option (only for new) -->
+            <div class="form-group" id="bulkAddGroup">
+                <label>
+                    <input type="checkbox" id="bulkAddCheck" onchange="toggleBulk()"> Bulk add multiple slots
+                </label>
+                <div id="bulkFields" style="display:none; margin-top: 12px;">
+                    <label for="bulkPrefix">Prefix</label>
+                    <input type="text" id="bulkPrefix" class="form-input" placeholder="e.g. A" style="margin-bottom:8px;">
+                    <label for="bulkStart">Start Number</label>
+                    <input type="number" id="bulkStart" class="form-input" value="1" min="1" style="margin-bottom:8px;">
+                    <label for="bulkCount">Count</label>
+                    <input type="number" id="bulkCount" class="form-input" value="10" min="1">
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <button type="button" class="btn btn-ghost" onclick="closeSlotModal()">Cancel</button>
+                <button type="submit" class="btn btn-primary" id="slotSubmitBtn">
+                    <i class="fa-solid fa-check"></i> Save Slot
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- TOAST CONTAINER -->
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+const CSRF = '{{ csrf_token }}';
+const API = '/security/api';
+
+// ──────────────────────────────────────────────────
+// NAV
+// ──────────────────────────────────────────────────
+document.querySelectorAll('.nav-item').forEach(item => {
+    item.addEventListener('click', e => {
+        e.preventDefault();
+        const sec = item.dataset.section;
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        item.classList.add('active');
+        document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
+        document.getElementById('section-' + sec).classList.add('active');
+        const titles = {
+            overview: ['Overview', 'Real-time parking status across Redemption City'],
+            zones:    ['Parking Zones', 'Create, edit and manage all parking zones'],
+            slots:    ['Parking Slots', 'Manage individual slots within zones'],
+            activity: ['Activity Log', 'Recent check-in and check-out sessions'],
+        };
+        document.getElementById('pageTitle').textContent = titles[sec][0];
+        document.getElementById('pageSubtitle').textContent = titles[sec][1];
+
+        // reload data for the section
+        if (sec === 'overview') refreshData();
+        if (sec === 'zones') loadZones();
+        if (sec === 'slots') loadSlots();
+        if (sec === 'activity') loadActivity();
+
+        // close sidebar on mobile
+        document.getElementById('sidebar').classList.remove('open');
+    });
+});
+
+document.getElementById('sidebarToggle').addEventListener('click', () => {
+    document.getElementById('sidebar').classList.toggle('open');
+});
+
+// ──────────────────────────────────────────────────
+// UTILITY
+// ──────────────────────────────────────────────────
+function toast(msg, type = 'success') {
+    const el = document.createElement('div');
+    el.className = 'toast toast-' + type;
+    el.innerHTML = `<i class="fa-solid ${type === 'success' ? 'fa-circle-check' : type === 'error' ? 'fa-circle-xmark' : 'fa-circle-info'}"></i><span>${msg}</span>`;
+    document.getElementById('toastContainer').appendChild(el);
+    setTimeout(() => el.classList.add('show'), 10);
+    setTimeout(() => { el.classList.remove('show'); setTimeout(() => el.remove(), 300); }, 3500);
+}
+
+function statusBadge(st) {
+    const colors = { open: '#10b981', filling: '#f59e0b', full: '#ef4444', closed: '#6b7280' };
+    const labels = { open: 'Open', filling: 'Filling', full: 'Full', closed: 'Closed' };
+    return `<span class="badge" style="--badge-color:${colors[st] || '#6b7280'}">${labels[st] || st}</span>`;
+}
+function slotBadge(st) {
+    const colors = { available: '#10b981', occupied: '#ef4444', reserved: '#3b82f6', blocked: '#6b7280' };
+    const labels = { available: 'Available', occupied: 'Occupied', reserved: 'Reserved', blocked: 'Blocked' };
+    return `<span class="badge" style="--badge-color:${colors[st] || '#6b7280'}">${labels[st] || st}</span>`;
+}
+function fmtDate(d) {
+    if (!d) return '—';
+    return new Date(d).toLocaleString('en-GB', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' });
+}
+
+async function apiFetch(path, opts = {}) {
+    const defaults = {
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+        credentials: 'same-origin',
+    };
+    const res = await fetch(API + path, { ...defaults, ...opts });
+    if (!res.ok) {
+        const text = await res.text();
+        throw new Error(text || res.statusText);
+    }
+    return res.json();
+}
+
+// ──────────────────────────────────────────────────
+// OVERVIEW
+// ──────────────────────────────────────────────────
+async function refreshData() {
+    try {
+        const data = await apiFetch('/zones/');
+        renderOverview(data);
+    } catch(e) {
+        toast('Failed to load data: ' + e.message, 'error');
+    }
+}
+
+function renderOverview(zones) {
+    const totalSlots = zones.reduce((s, z) => s + z.total_slots, 0);
+    const occSlots   = zones.reduce((s, z) => s + z.occupied, 0);
+    const avSlots    = zones.reduce((s, z) => s + z.available, 0);
+    const pct        = totalSlots > 0 ? Math.round((occSlots / totalSlots) * 100) : 0;
+
+    document.getElementById('summaryCards').innerHTML = `
+        <div class="sum-card">
+            <div class="sum-icon" style="--ic-color:#6366f1"><i class="fa-solid fa-map-location-dot"></i></div>
+            <div class="sum-body"><div class="sum-value">${zones.length}</div><div class="sum-label">Total Zones</div></div>
+        </div>
+        <div class="sum-card">
+            <div class="sum-icon" style="--ic-color:#10b981"><i class="fa-solid fa-car"></i></div>
+            <div class="sum-body"><div class="sum-value">${totalSlots}</div><div class="sum-label">Total Slots</div></div>
+        </div>
+        <div class="sum-card">
+            <div class="sum-icon" style="--ic-color:#ef4444"><i class="fa-solid fa-car-burst"></i></div>
+            <div class="sum-body"><div class="sum-value">${occSlots}</div><div class="sum-label">Occupied</div></div>
+        </div>
+        <div class="sum-card">
+            <div class="sum-icon" style="--ic-color:#10b981"><i class="fa-solid fa-square-parking"></i></div>
+            <div class="sum-body"><div class="sum-value">${avSlots}</div><div class="sum-label">Available</div></div>
+        </div>
+        <div class="sum-card sum-wide">
+            <div class="sum-icon" style="--ic-color:#f59e0b"><i class="fa-solid fa-gauge"></i></div>
+            <div class="sum-body">
+                <div class="sum-value">${pct}%</div>
+                <div class="sum-label">Overall Occupancy</div>
+                <div class="progress-bar"><div class="progress-fill" style="width:${pct}%;background:${pct >= 90 ? '#ef4444' : pct >= 60 ? '#f59e0b' : '#10b981'}"></div></div>
+            </div>
+        </div>
+    `;
+
+    let gridHtml = '';
+    zones.forEach(z => {
+        const zpct = z.total_slots > 0 ? Math.round((z.occupied / z.total_slots) * 100) : 0;
+        gridHtml += `
+        <div class="zone-card">
+            <div class="zone-card-head">
+                <h3>${z.name}</h3>
+                ${statusBadge(z.status)}
+            </div>
+            <p class="zone-desc">${z.description || 'No description'}</p>
+            <div class="zone-stats">
+                <div><span class="stat-num">${z.total_slots}</span><span class="stat-lbl">Total</span></div>
+                <div><span class="stat-num" style="color:#ef4444">${z.occupied}</span><span class="stat-lbl">Occupied</span></div>
+                <div><span class="stat-num" style="color:#10b981">${z.available}</span><span class="stat-lbl">Available</span></div>
+            </div>
+            <div class="zone-bar">
+                <div class="zone-bar-fill" style="width:${zpct}%;background:${zpct >= 90 ? '#ef4444' : zpct >= 60 ? '#f59e0b' : '#10b981'}"></div>
+            </div>
+            <div class="zone-bar-label">${zpct}% occupied</div>
+            ${z.manual_override ? '<div class="override-tag"><i class="fa-solid fa-lock"></i> Manual Override Active</div>' : ''}
+        </div>`;
+    });
+    document.getElementById('zoneGrid').innerHTML = gridHtml || '<p class="empty-msg">No zones found. Add one from the Zones tab.</p>';
+}
+
+// ──────────────────────────────────────────────────
+// ZONES CRUD
+// ──────────────────────────────────────────────────
+async function loadZones() {
+    try {
+        const data = await apiFetch('/zones/');
+        renderZonesTable(data);
+        populateZoneSelects(data);
+    } catch(e) { toast('Failed: ' + e.message, 'error'); }
+}
+
+function renderZonesTable(zones) {
+    let html = '';
+    zones.forEach(z => {
+        html += `<tr>
+            <td><strong>${z.name}</strong></td>
+            <td>${z.description || '—'}</td>
+            <td>${z.capacity}</td>
+            <td>${z.occupied}</td>
+            <td>${z.available}</td>
+            <td>${statusBadge(z.status)}</td>
+            <td>${z.manual_override ? '<span class="override-on">ON</span>' : '<span class="override-off">OFF</span>'}</td>
+            <td class="actions-cell">
+                <button class="btn-icon" title="Edit" onclick="editZone(${z.id})"><i class="fa-solid fa-pen"></i></button>
+                <button class="btn-icon btn-icon-danger" title="Delete" onclick="deleteZone(${z.id}, '${z.name}')"><i class="fa-solid fa-trash"></i></button>
+                <button class="btn-icon btn-icon-warning" title="Release all slots" onclick="releaseZone(${z.id}, '${z.name}')"><i class="fa-solid fa-unlock"></i></button>
+            </td>
+        </tr>`;
+    });
+    document.getElementById('zonesBody').innerHTML = html || '<tr><td colspan="8" class="empty-msg">No zones yet. Click "Add Zone" to create one.</td></tr>';
+}
+
+function populateZoneSelects(zones) {
+    const opts = zones.map(z => `<option value="${z.id}">${z.name}</option>`).join('');
+    document.getElementById('slotZone').innerHTML = '<option value="">Select Zone</option>' + opts;
+    document.getElementById('slotZoneFilter').innerHTML = '<option value="">All Zones</option>' + opts;
+}
+
+function openZoneModal(data = null) {
+    document.getElementById('zoneModalTitle').textContent = data ? 'Edit Zone' : 'Add Parking Zone';
+    document.getElementById('zoneId').value = data ? data.id : '';
+    document.getElementById('zoneName').value = data ? data.name : '';
+    document.getElementById('zoneDesc').value = data ? data.description : '';
+    document.getElementById('zoneCap').value = data ? data.capacity : 50;
+    document.getElementById('zoneOverride').checked = data ? data.manual_override : false;
+    document.getElementById('zoneOverrideStatus').value = data ? (data.override_status || '') : '';
+    document.getElementById('zoneModal').classList.add('open');
+}
+function closeZoneModal() { document.getElementById('zoneModal').classList.remove('open'); }
+
+async function saveZone(e) {
+    e.preventDefault();
+    const id = document.getElementById('zoneId').value;
+    const body = {
+        name: document.getElementById('zoneName').value,
+        description: document.getElementById('zoneDesc').value,
+        capacity: parseInt(document.getElementById('zoneCap').value),
+        manual_override: document.getElementById('zoneOverride').checked,
+        override_status: document.getElementById('zoneOverrideStatus').value || null,
+    };
+    try {
+        if (id) {
+            await apiFetch(`/zones/${id}/`, { method: 'PUT', body: JSON.stringify(body) });
+            toast('Zone updated successfully!');
+        } else {
+            await apiFetch('/zones/', { method: 'POST', body: JSON.stringify(body) });
+            toast('Zone created successfully!');
+        }
+        closeZoneModal();
+        loadZones();
+    } catch(e) { toast('Error: ' + e.message, 'error'); }
+}
+
+async function editZone(id) {
+    try {
+        const z = await apiFetch(`/zones/${id}/`);
+        openZoneModal(z);
+    } catch(e) { toast('Error: ' + e.message, 'error'); }
+}
+
+async function deleteZone(id, name) {
+    if (!confirm(`Delete zone "${name}" and all its slots? This cannot be undone.`)) return;
+    try {
+        await apiFetch(`/zones/${id}/`, { method: 'DELETE' });
+        toast(`Zone "${name}" deleted.`);
+        loadZones();
+    } catch(e) { toast('Error: ' + e.message, 'error'); }
+}
+
+async function releaseZone(id, name) {
+    if (!confirm(`Release ALL occupied slots in "${name}"? This will check out every car.`)) return;
+    try {
+        await apiFetch(`/zones/${id}/release/`, { method: 'POST' });
+        toast(`All slots in "${name}" released.`);
+        loadZones();
+    } catch(e) { toast('Error: ' + e.message, 'error'); }
+}
+
+// ──────────────────────────────────────────────────
+// SLOTS CRUD
+// ──────────────────────────────────────────────────
+async function loadSlots() {
+    const zoneId = document.getElementById('slotZoneFilter').value;
+    const qs = zoneId ? `?zone=${zoneId}` : '';
+    try {
+        const data = await apiFetch('/slots/' + qs);
+        renderSlotsTable(data);
+    } catch(e) { toast('Error: ' + e.message, 'error'); }
+}
+
+function renderSlotsTable(slots) {
+    let html = '';
+    slots.forEach(s => {
+        html += `<tr>
+            <td><code>${s.slot_number}</code></td>
+            <td>${s.zone_name}</td>
+            <td>${slotBadge(s.status)}</td>
+            <td>${s.vehicle_plate || '—'}</td>
+            <td>${fmtDate(s.occupied_at)}</td>
+            <td>${fmtDate(s.auto_release_at)}</td>
+            <td class="actions-cell">
+                <button class="btn-icon" title="Edit" onclick="editSlot(${s.id})"><i class="fa-solid fa-pen"></i></button>
+                ${s.status === 'occupied' ? `<button class="btn-icon btn-icon-warning" title="Force check-out" onclick="forceCheckout(${s.id})"><i class="fa-solid fa-right-from-bracket"></i></button>` : ''}
+                <button class="btn-icon btn-icon-danger" title="Delete" onclick="deleteSlot(${s.id}, '${s.slot_number}')"><i class="fa-solid fa-trash"></i></button>
+            </td>
+        </tr>`;
+    });
+    document.getElementById('slotsBody').innerHTML = html || '<tr><td colspan="7" class="empty-msg">No slots found.</td></tr>';
+}
+
+function toggleBulk() {
+    const show = document.getElementById('bulkAddCheck').checked;
+    document.getElementById('bulkFields').style.display = show ? 'block' : 'none';
+    document.getElementById('slotNumber').disabled = show;
+}
+
+function openSlotModal(data = null) {
+    document.getElementById('slotModalTitle').textContent = data ? 'Edit Slot' : 'Add Parking Slot';
+    document.getElementById('slotId').value = data ? data.id : '';
+    document.getElementById('slotZone').value = data ? data.zone : '';
+    document.getElementById('slotNumber').value = data ? data.slot_number : '';
+    document.getElementById('slotStatus').value = data ? data.status : 'available';
+    document.getElementById('slotPlate').value = data ? (data.vehicle_plate || '') : '';
+    // Show/hide bulk group
+    const bg = document.getElementById('bulkAddGroup');
+    bg.style.display = data ? 'none' : 'block';
+    document.getElementById('bulkAddCheck').checked = false;
+    document.getElementById('bulkFields').style.display = 'none';
+    document.getElementById('slotNumber').disabled = false;
+    document.getElementById('slotModal').classList.add('open');
+}
+function closeSlotModal() { document.getElementById('slotModal').classList.remove('open'); }
+
+async function saveSlot(e) {
+    e.preventDefault();
+    const id = document.getElementById('slotId').value;
+    const isBulk = document.getElementById('bulkAddCheck').checked && !id;
+
+    if (isBulk) {
+        // Bulk add
+        const body = {
+            zone: parseInt(document.getElementById('slotZone').value),
+            prefix: document.getElementById('bulkPrefix').value,
+            start: parseInt(document.getElementById('bulkStart').value),
+            count: parseInt(document.getElementById('bulkCount').value),
+            status: document.getElementById('slotStatus').value,
+        };
+        try {
+            const res = await apiFetch('/slots/bulk/', { method: 'POST', body: JSON.stringify(body) });
+            toast(`${res.created} slots created!`);
+            closeSlotModal();
+            loadSlots();
+        } catch(e) { toast('Error: ' + e.message, 'error'); }
+    } else {
+        const body = {
+            zone: parseInt(document.getElementById('slotZone').value),
+            slot_number: document.getElementById('slotNumber').value,
+            status: document.getElementById('slotStatus').value,
+            vehicle_plate: document.getElementById('slotPlate').value || null,
+        };
+        try {
+            if (id) {
+                await apiFetch(`/slots/${id}/`, { method: 'PUT', body: JSON.stringify(body) });
+                toast('Slot updated!');
+            } else {
+                await apiFetch('/slots/', { method: 'POST', body: JSON.stringify(body) });
+                toast('Slot created!');
+            }
+            closeSlotModal();
+            loadSlots();
+        } catch(e) { toast('Error: ' + e.message, 'error'); }
+    }
+}
+
+async function editSlot(id) {
+    try {
+        const s = await apiFetch(`/slots/${id}/`);
+        openSlotModal(s);
+    } catch(e) { toast('Error: ' + e.message, 'error'); }
+}
+
+async function deleteSlot(id, num) {
+    if (!confirm(`Delete slot "${num}"?`)) return;
+    try {
+        await apiFetch(`/slots/${id}/`, { method: 'DELETE' });
+        toast(`Slot "${num}" deleted.`);
+        loadSlots();
+    } catch(e) { toast('Error: ' + e.message, 'error'); }
+}
+
+async function forceCheckout(id) {
+    if (!confirm('Force check-out this slot?')) return;
+    try {
+        await apiFetch(`/slots/${id}/checkout/`, { method: 'POST' });
+        toast('Slot checked out.');
+        loadSlots();
+    } catch(e) { toast('Error: ' + e.message, 'error'); }
+}
+
+// ──────────────────────────────────────────────────
+// ACTIVITY
+// ──────────────────────────────────────────────────
+async function loadActivity() {
+    try {
+        const data = await apiFetch('/sessions/');
+        let html = '';
+        data.forEach(s => {
+            html += `<tr>
+                <td><code>${s.token_short}</code></td>
+                <td>${s.slot_label}</td>
+                <td>${s.vehicle_plate || '—'}</td>
+                <td>${fmtDate(s.checked_in_at)}</td>
+                <td>${fmtDate(s.checked_out_at)}</td>
+                <td>${s.is_active ? '<span class="badge" style="--badge-color:#10b981">Active</span>' : '<span class="badge" style="--badge-color:#6b7280">Ended</span>'}</td>
+            </tr>`;
+        });
+        document.getElementById('activityBody').innerHTML = html || '<tr><td colspan="6" class="empty-msg">No sessions yet.</td></tr>';
+    } catch(e) { toast('Error: ' + e.message, 'error'); }
+}
+
+// ──────────────────────────────────────────────────
+// CLOCK & INIT
+// ──────────────────────────────────────────────────
+function updateClock() {
+    document.getElementById('timestamp').textContent = new Date().toLocaleString('en-GB', {
+        day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit', second:'2-digit'
+    });
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// Auto-refresh overview every 10 seconds
+setInterval(() => {
+    const activeSection = document.querySelector('.content-section.active');
+    if (activeSection && activeSection.id === 'section-overview') refreshData();
+}, 10000);
+
+// Initial load
+refreshData();
+loadZones();
+</script>
+
+</body>
+</html>

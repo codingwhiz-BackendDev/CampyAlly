@@ -12,10 +12,14 @@ class ParkingZone(models.Model):
         ('closed',  'Closed'),
     ]
 
-    name             = models.CharField(max_length=100)          # e.g. "Zone A"
+    name             = models.CharField(max_length=100)
     description      = models.CharField(max_length=255, blank=True)
     capacity         = models.PositiveIntegerField(default=50)
     status           = models.CharField(max_length=10, choices=STATUS_CHOICES, default='open')
+
+    # GPS coordinates — update these in admin or seed command to real values
+    latitude         = models.FloatField(default=0.0, help_text="Zone GPS latitude. Update to real value.")
+    longitude        = models.FloatField(default=0.0, help_text="Zone GPS longitude. Update to real value.")
 
     # Security staff can override the auto-calculated status
     manual_override  = models.BooleanField(default=False)
@@ -37,11 +41,6 @@ class ParkingZone(models.Model):
         return round((self.occupied_count() / total) * 100)
 
     def computed_status(self):
-        """
-        If security has set a manual override, use that.
-        Otherwise calculate automatically from slot data:
-          >=100% → full | >=70% → filling | else → open
-        """
         if self.manual_override and self.override_status:
             return self.override_status
         pct = self.occupancy_percent()
@@ -52,7 +51,8 @@ class ParkingZone(models.Model):
         return 'open'
 
     def save(self, *args, **kwargs):
-        self.status = self.computed_status()
+        if self.pk:
+            self.status = self.computed_status()
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -70,22 +70,16 @@ class ParkingSlot(models.Model):
         ('blocked',   'Blocked'),
     ]
 
-    zone           = models.ForeignKey(ParkingZone, on_delete=models.CASCADE, related_name='slots')
-    slot_number    = models.CharField(max_length=10)     # e.g. "A-01"
-    status         = models.CharField(max_length=10, choices=STATUS_CHOICES, default='available')
+    zone            = models.ForeignKey(ParkingZone, on_delete=models.CASCADE, related_name='slots')
+    slot_number     = models.CharField(max_length=10)
+    status          = models.CharField(max_length=10, choices=STATUS_CHOICES, default='available')
+    occupied_by     = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    occupied_at     = models.DateTimeField(null=True, blank=True)
+    auto_release_at = models.DateTimeField(null=True, blank=True)
+    session_token   = models.CharField(max_length=64, blank=True, null=True)
+    vehicle_plate   = models.CharField(max_length=20, blank=True, null=True)
+    updated_at      = models.DateTimeField(auto_now=True)
 
-    # Who is parked here (optional — works for anonymous users too via session_token)
-    occupied_by    = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
-    occupied_at    = models.DateTimeField(null=True, blank=True)
-    auto_release_at= models.DateTimeField(null=True, blank=True)
-
-    # Anonymous users are tracked by a browser session token instead of a User account
-    session_token  = models.CharField(max_length=64, blank=True, null=True)
-    vehicle_plate  = models.CharField(max_length=20, blank=True, null=True)
-
-    updated_at     = models.DateTimeField(auto_now=True)
-
-    # ------------------------------------------------------------------
     def check_in(self, user=None, session_token=None, vehicle_plate=None, hours=24):
         self.status          = 'occupied'
         self.occupied_by     = user
@@ -94,7 +88,7 @@ class ParkingSlot(models.Model):
         self.occupied_at     = timezone.now()
         self.auto_release_at = timezone.now() + timezone.timedelta(hours=hours)
         self.save()
-        self.zone.save()   # recalculate zone status
+        self.zone.save()
 
     def check_out(self):
         self.status          = 'available'
@@ -104,7 +98,7 @@ class ParkingSlot(models.Model):
         self.occupied_at     = None
         self.auto_release_at = None
         self.save()
-        self.zone.save()   # recalculate zone status
+        self.zone.save()
 
     def __str__(self):
         return f"{self.zone.name} – Slot {self.slot_number}"
@@ -115,7 +109,6 @@ class ParkingSlot(models.Model):
 
 
 class CheckInSession(models.Model):
-    """Tracks each anonymous browser check-in so we can match check-out."""
     token          = models.CharField(max_length=64, unique=True, default=uuid.uuid4)
     slot           = models.ForeignKey(ParkingSlot, on_delete=models.CASCADE, related_name='sessions')
     vehicle_plate  = models.CharField(max_length=20, blank=True)
