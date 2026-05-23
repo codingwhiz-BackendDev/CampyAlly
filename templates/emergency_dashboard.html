@@ -1,0 +1,286 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emergency Control Center — Redemption City</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="{% static 'css/index.css' %}">
+    <link rel="stylesheet" href="{% static 'css/emergency.css' %}">
+    <link rel="stylesheet" href="{% static 'css/emergency_dashboard.css' %}">
+</head>
+<body>
+
+<!-- BG ORBS -->
+<div class="bg-orbs">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+</div>
+
+<!-- NAV -->
+<nav class="site-nav">
+    <div class="container">
+        <div class="nav-inner">
+            <a href="/" class="nav-logo">
+                <div class="nav-logo-mark">
+                    <div class="logo-glow"></div>
+                    <i class="fa-solid fa-shield-halved"></i>
+                </div>
+                <div class="logo-text">
+                    <span class="logo-main">CampEase</span>
+                    <span class="logo-badge">Control</span>
+                </div>
+            </a>
+            <div class="nav-links-wrap">
+                <a href="/" class="nav-link">Home</a>
+                <a href="/emergency/" class="nav-link">Report</a>
+                <a href="/emergency/dashboard/" class="nav-link active">Dashboard</a>
+                <a href="/lost-person/" class="nav-link">Lost & Found</a>
+            </div>
+            <div class="nav-actions">
+                <span class="live-dot"></span>
+                <span id="nav-live-text">Live</span>
+                <span id="nav-active-badge">
+                    {{ active_count }} Active
+                </span>
+            </div>
+        </div>
+    </div>
+</nav>
+
+<!-- DASHBOARD -->
+<section id="emergency-dashboard">
+    <div class="container">
+
+        <!-- Header -->
+        <div class="dash-header">
+            <div>
+                <div class="dash-badge">
+                    <span class="live-dot"></span> EMERGENCY CONTROL CENTER
+                </div>
+                <h1 class="dash-title">Redemption City <span class="gradient-text">Response Hub</span></h1>
+                <p class="dash-subtitle">Real-time emergency monitoring · Updates every 8 seconds</p>
+            </div>
+            <div class="dash-header-actions">
+                <a href="/emergency/" class="btn btn-primary">
+                    <i class="fa-solid fa-plus"></i> New Report
+                </a>
+                <span id="last-refresh"></span>
+            </div>
+        </div>
+
+        <!-- KPI Row -->
+        <div class="kpi-row">
+            <div class="kpi-card" style="--glow-color:#ff3b30;">
+                <div class="kpi-card-glow"></div>
+                <div class="kpi-icon" style="background:rgba(255,59,48,0.15);color:#ff3b30;">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                </div>
+                <div class="kpi-value" id="kpi-active" style="color:#ff3b30;">{{ active_count }}</div>
+                <div class="kpi-label">Active Emergencies</div>
+            </div>
+            <div class="kpi-card" style="--glow-color:#ffd43b;">
+                <div class="kpi-card-glow"></div>
+                <div class="kpi-icon" style="background:rgba(255,212,59,0.15);color:#ffd43b;">
+                    <i class="fa-solid fa-siren-on"></i>
+                </div>
+                <div class="kpi-value" id="kpi-critical" style="color:#ffd43b;">{{ by_severity.critical }}</div>
+                <div class="kpi-label">Critical Severity</div>
+            </div>
+            <div class="kpi-card" style="--glow-color:#34c759;">
+                <div class="kpi-card-glow"></div>
+                <div class="kpi-icon" style="background:rgba(52,199,89,0.15);color:#34c759;">
+                    <i class="fa-solid fa-circle-check"></i>
+                </div>
+                <div class="kpi-value" id="kpi-resolved" style="color:#34c759;">{{ resolved_count }}</div>
+                <div class="kpi-label">Resolved Today</div>
+            </div>
+            <div class="kpi-card" style="--glow-color:#63b3ed;">
+                <div class="kpi-card-glow"></div>
+                <div class="kpi-icon" style="background:rgba(99,179,237,0.15);color:#63b3ed;">
+                    <i class="fa-solid fa-database"></i>
+                </div>
+                <div class="kpi-value" id="kpi-total" style="color:#63b3ed;">{{ total }}</div>
+                <div class="kpi-label">Total Reports</div>
+            </div>
+        </div>
+
+        <!-- Analytics row -->
+        <div class="analytics-grid" style="margin-bottom:28px;">
+            <div class="analytics-card">
+                <h4>By Type</h4>
+                {% for item in by_type %}
+                <div class="bar-item">
+                    <div class="bar-label">
+                        <span>{{ item.emergency_type|title }}</span>
+                        <span>{{ item.count }}</span>
+                    </div>
+                    <div class="bar-track">
+                        <div class="bar-fill"
+                             style="width:{% if total > 0 %}{% widthratio item.count total 100 %}{% else %}0{% endif %}%;background:#63b3ed;"></div>
+                    </div>
+                </div>
+                {% empty %}
+                <div style="color:#4a5568;font-size:13px;text-align:center;padding:12px;">No data yet</div>
+                {% endfor %}
+            </div>
+            <div class="analytics-card">
+                <h4>By Severity</h4>
+                {% with total_sev=by_severity.critical|add:by_severity.high|add:by_severity.medium|add:by_severity.low %}
+                <div class="bar-item">
+                    <div class="bar-label"><span>🔴 Critical</span><span>{{ by_severity.critical }}</span></div>
+                    <div class="bar-track"><div class="bar-fill" style="width:{% if total_sev > 0 %}{% widthratio by_severity.critical total_sev 100 %}{% else %}0{% endif %}%;background:var(--sev-critical);"></div></div>
+                </div>
+                <div class="bar-item">
+                    <div class="bar-label"><span>🟠 High</span><span>{{ by_severity.high }}</span></div>
+                    <div class="bar-track"><div class="bar-fill" style="width:{% if total_sev > 0 %}{% widthratio by_severity.high total_sev 100 %}{% else %}0{% endif %}%;background:var(--sev-high);"></div></div>
+                </div>
+                <div class="bar-item">
+                    <div class="bar-label"><span>🟡 Medium</span><span>{{ by_severity.medium }}</span></div>
+                    <div class="bar-track"><div class="bar-fill" style="width:{% if total_sev > 0 %}{% widthratio by_severity.medium total_sev 100 %}{% else %}0{% endif %}%;background:var(--sev-medium);"></div></div>
+                </div>
+                <div class="bar-item">
+                    <div class="bar-label"><span>🟢 Low</span><span>{{ by_severity.low }}</span></div>
+                    <div class="bar-track"><div class="bar-fill" style="width:{% if total_sev > 0 %}{% widthratio by_severity.low total_sev 100 %}{% else %}0{% endif %}%;background:var(--sev-low);"></div></div>
+                </div>
+                {% endwith %}
+            </div>
+        </div>
+
+        <!-- Main two-column layout -->
+        <div class="dash-layout">
+
+            <!-- Left: Reports list -->
+            <div>
+                <!-- Filter bar -->
+                <div class="filter-bar">
+                    <button class="filter-btn active" onclick="filterReports('all',this)">All</button>
+                    <button class="filter-btn" onclick="filterReports('reported',this)">Reported</button>
+                    <button class="filter-btn" onclick="filterReports('dispatched',this)">Dispatched</button>
+                    <button class="filter-btn" onclick="filterReports('on_scene',this)">On Scene</button>
+                    <button class="filter-btn" onclick="filterReports('resolved',this)">Resolved</button>
+                    <div class="filter-search">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                        <input type="text" placeholder="Search reports…" oninput="searchReports(this.value)">
+                    </div>
+                </div>
+
+                <!-- Reports list -->
+                <div class="reports-list" id="reports-list">
+                    {% for report in reports %}
+                    <div class="report-card sev-{{ report.severity }}-card etype-{{ report.emergency_type }}"
+                         data-id="{{ report.id }}"
+                         data-status="{{ report.status }}"
+                         data-type="{{ report.emergency_type }}"
+                         onclick="openDetail('{{ report.id }}')">
+                        <div class="report-card-top">
+                            <div class="report-type-icon etype-{{ report.emergency_type }}">
+                                {% if report.emergency_type == 'medical' %}<i class="fa-solid fa-kit-medical"></i>
+                                {% elif report.emergency_type == 'fire' %}<i class="fa-solid fa-fire-flame-curved"></i>
+                                {% elif report.emergency_type == 'security' %}<i class="fa-solid fa-shield-exclamation"></i>
+                                {% elif report.emergency_type == 'missing' %}<i class="fa-solid fa-child-reaching"></i>
+                                {% elif report.emergency_type == 'traffic' %}<i class="fa-solid fa-car-burst"></i>
+                                {% elif report.emergency_type == 'stampede' %}<i class="fa-solid fa-people-arrows"></i>
+                                {% else %}<i class="fa-solid fa-circle-exclamation"></i>{% endif %}
+                            </div>
+                            <div class="report-meta">
+                                <div class="report-title">{{ report.get_emergency_type_display }}</div>
+                                <div class="report-subtitle">
+                                    {% if report.reporter_name %}{{ report.reporter_name }} · {% endif %}
+                                    {{ report.time_since_reported }}
+                                </div>
+                            </div>
+                            <div class="report-badges">
+                                <span class="sev-badge sev-{{ report.severity }}">{{ report.severity }}</span>
+                                <span class="status-badge status-{{ report.status }}">{{ report.get_status_display }}</span>
+                            </div>
+                        </div>
+                        <div class="report-body">{{ report.description }}</div>
+                        <div class="report-footer">
+                            <span class="report-location">
+                                <i class="fa-solid fa-location-dot"></i>
+                                {{ report.location_name|default:"Location pending" }}
+                            </span>
+                            <span class="report-time">{{ report.reported_at|date:"H:i · d M" }}</span>
+                            <div class="report-actions" onclick="event.stopPropagation()">
+                                {% if report.status == 'reported' %}
+                                <button class="action-btn dispatch" onclick="updateStatus('{{ report.id }}','dispatched')">Dispatch</button>
+                                {% elif report.status == 'dispatched' %}
+                                <button class="action-btn" style="color:#ff922b;border-color:rgba(255,146,43,0.3);" onclick="updateStatus('{{ report.id }}','on_scene')">On Scene</button>
+                                {% elif report.status == 'on_scene' %}
+                                <button class="action-btn resolve" onclick="updateStatus('{{ report.id }}','resolved')">Resolve</button>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="reports-empty">
+                        <i class="fa-solid fa-shield-check" style="color:#34c759;"></i>
+                        <h3>All Clear</h3>
+                        <p>No emergency reports yet. The city is safe.</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Right: Detail panel -->
+            <div>
+                <div id="detail-panel">
+                    <div class="detail-empty" id="detail-empty">
+                        <i class="fa-solid fa-hand-pointer"></i>
+                        <p style="font-size:14px;color:#718096;">Click any report to view full details, timeline, and respond.</p>
+                    </div>
+                    <div id="detail-content" style="display:none;"></div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</section>
+
+<!-- Toast container -->
+<div id="toast-container"></div>
+
+<!-- Report data for JS -->
+<script>
+const INITIAL_REPORTS = [
+    {% for report in reports %}
+    {
+        id:            "{{ report.id }}",
+        type:          "{{ report.emergency_type }}",
+        type_display:  "{{ report.get_emergency_type_display }}",
+        severity:      "{{ report.severity }}",
+        status:        "{{ report.status }}",
+        status_display:"{{ report.get_status_display }}",
+        description:   "{{ report.description|escapejs }}",
+        reporter_name: "{{ report.reporter_name }}",
+        reporter_phone:"{{ report.reporter_phone }}",
+        location_name: "{{ report.location_name }}",
+        latitude:      {{ report.latitude|default:"null" }},
+        longitude:     {{ report.longitude|default:"null" }},
+        reported_at:   "{{ report.reported_at|date:'H:i · d M Y' }}",
+        time_since:    "{{ report.time_since_reported }}",
+        is_active:     {{ report.is_active|yesno:"true,false" }},
+        responder_name:"{{ report.responder_name }}",
+        response_notes:"{{ report.response_notes }}",
+        timeline: [
+            {% for t in report.timeline.all %}
+            {
+                status:    "{{ t.status }}",
+                note:      "{{ t.note|escapejs }}",
+                updated_by:"{{ t.updated_by }}",
+                timestamp: "{{ t.timestamp|date:'H:i · d M Y' }}",
+            },
+            {% endfor %}
+        ],
+    },
+    {% endfor %}
+];
+</script>
+<script src="{% static 'js/emergency_dashboard.js' %}"></script>
+</body>
+</html>

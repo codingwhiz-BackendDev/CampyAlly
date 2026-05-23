@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.utils.html import format_html
 from django.utils import timezone
-from .models import ParkingZone, ParkingSlot, CheckInSession
+from .models import ParkingZone, ParkingSlot, CheckInSession,EmergencyReport,EmergencyTimeline,LostFoundReport
 
 
 # ── Zone admin ────────────────────────────────────────────────────────────────
@@ -178,3 +178,54 @@ class CheckInSessionAdmin(admin.ModelAdmin):
     def token_short(self, obj):
         return f"{str(obj.token)[:12]}…"
     token_short.short_description = 'Session'
+    
+    
+
+
+admin.site.register(EmergencyReport)
+admin.site.register(EmergencyTimeline)
+
+
+# ── Lost & Found Admin ─────────────────────────────────────────────────────────
+
+@admin.register(LostFoundReport)
+class LostFoundReportAdmin(admin.ModelAdmin):
+    list_display = (
+        'title', 'category', 'status', 'urgency',
+        'location', 'phone_number', 'created_at'
+    )
+    list_filter = ('category', 'status', 'urgency', 'created_at')
+    search_fields = ('title', 'description', 'location', 'reporter_name')
+    readonly_fields = ('created_at', 'updated_at', 'time_since_created')
+    
+    fieldsets = (
+        ('Basic Information', {
+            'fields': ('category', 'title', 'description', 'image')
+        }),
+        ('Location & Contact', {
+            'fields': ('location', 'latitude', 'longitude', 'phone_number', 'date_time')
+        }),
+        ('Status & Urgency', {
+            'fields': ('status', 'urgency', 'resolved_at')
+        }),
+        ('Person Details', {
+            'fields': ('age', 'gender'),
+            'classes': ('collapse',)
+        }),
+        ('Item Details', {
+            'fields': ('item_type',),
+            'classes': ('collapse',)
+        }),
+        ('Reporter Information', {
+            'fields': ('reporter_name', 'reporter_email'),
+            'classes': ('collapse',)
+        }),
+        ('Timestamps', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    def time_since_created(self, obj):
+        return obj.time_since_created()
+    time_since_created.short_description = 'Time Since'

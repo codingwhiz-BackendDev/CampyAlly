@@ -1,0 +1,272 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Report Emergency — Redemption City</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="{% static 'css/index.css' %}">
+    <link rel="stylesheet" href="{% static 'css/emergency.css' %}">
+    <link rel="stylesheet" href="{% static 'css/emergency_report.css' %}">
+</head>
+<body>
+
+<!-- BG ORBS -->
+<div class="bg-orbs">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+</div>
+
+<!-- NAV -->
+<nav class="site-nav">
+    <div class="container">
+        <div class="nav-inner">
+            <a href="/" class="nav-logo">
+                <div class="nav-logo-mark">
+                    <div class="logo-glow"></div>
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                </div>
+                <div class="logo-text">
+                    <span class="logo-main">CampEase</span>
+                    <span class="logo-badge">Emergency</span>
+                </div>
+            </a>
+            <div class="nav-links-wrap">
+                <a href="/" class="nav-link">Home</a>
+                <a href="/parking/" class="nav-link">Parking</a>
+                <a href="/emergency/" class="nav-link active">Emergency</a>
+            </div>
+            {% comment %} <div class="nav-actions">
+                <a href="/emergency/dashboard/" class="btn btn-primary">
+                    <i class="fa-solid fa-shield-halved"></i> Admin
+                </a>
+            </div> {% endcomment %}
+        </div>
+    </div>
+</nav>
+
+<!-- MAIN -->
+<section id="emergency-page">
+    <div class="container">
+        <div class="emergency-layout">
+
+            <!-- LEFT: Report form -->
+            <div class="emergency-main">
+                <!-- Hero -->
+                <div class="emergency-hero fade-in">
+                    <div class="emergency-hero-badge">
+                        <span class="live-dot"></span> EMERGENCY RESPONSE SYSTEM
+                    </div>
+                    <h1>Report an <span class="gradient-text">Emergency</span></h1>
+                    <p>Select the type of emergency below. Help will be dispatched immediately.</p>
+                </div>
+
+                <!-- Form card -->
+                <div class="glass-card" style="padding:28px;" id="form-card">
+
+                    <!-- Step 1: Type -->
+                    <div class="form-section" id="section-type">
+                        <p style="font-size:13px;color:#718096;margin-bottom:16px;font-weight:600;font-family:'Space Grotesk',sans-serif;letter-spacing:0.5px;text-transform:uppercase;">
+                            1 · Select Emergency Type <span style="color:#ff6b6b">*</span>
+                        </p>
+                        <div class="type-grid">
+                            <button class="type-btn etype-medical"  data-type="medical"   onclick="selectType(this,'medical')">
+                                <span class="type-btn-icon"><i class="fa-solid fa-kit-medical"></i></span>
+                                <span class="type-btn-label">Medical Emergency</span>
+                            </button>
+                            <button class="type-btn etype-fire"     data-type="fire"      onclick="selectType(this,'fire')">
+                                <span class="type-btn-icon"><i class="fa-solid fa-fire-flame-curved"></i></span>
+                                <span class="type-btn-label">Fire Outbreak</span>
+                            </button>
+                            <button class="type-btn etype-security" data-type="security"  onclick="selectType(this,'security')">
+                                <span class="type-btn-icon"><i class="fa-solid fa-shield-exclamation"></i></span>
+                                <span class="type-btn-label">Security Threat</span>
+                            </button>
+                            <button class="type-btn etype-missing"  data-type="missing"   onclick="selectType(this,'missing')">
+                                <span class="type-btn-icon"><i class="fa-solid fa-child-reaching"></i></span>
+                                <span class="type-btn-label">Missing Child</span>
+                            </button>
+                            <button class="type-btn etype-traffic"  data-type="traffic"   onclick="selectType(this,'traffic')">
+                                <span class="type-btn-icon"><i class="fa-solid fa-car-burst"></i></span>
+                                <span class="type-btn-label">Traffic Accident</span>
+                            </button>
+                            <button class="type-btn etype-stampede" data-type="stampede"  onclick="selectType(this,'stampede')">
+                                <span class="type-btn-icon"><i class="fa-solid fa-people-arrows"></i></span>
+                                <span class="type-btn-label">Crowd Stampede</span>
+                            </button>
+                            <button class="type-btn etype-other"    data-type="other"     onclick="selectType(this,'other')">
+                                <span class="type-btn-icon"><i class="fa-solid fa-circle-exclamation"></i></span>
+                                <span class="type-btn-label">Other</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="form-extended" style="display:none;">
+
+                        <!-- Step 2: Severity -->
+                        <div class="form-section" style="margin-bottom:24px;">
+                            <p style="font-size:13px;color:#718096;margin-bottom:12px;font-weight:600;font-family:'Space Grotesk',sans-serif;letter-spacing:0.5px;text-transform:uppercase;">
+                                2 · Severity Level
+                            </p>
+                            <div class="severity-row">
+                                <button class="sev-btn" data-sev="low"      onclick="selectSeverity(this,'low')">🟢 Low</button>
+                                <button class="sev-btn" data-sev="medium"   onclick="selectSeverity(this,'medium')">🟡 Medium</button>
+                                <button class="sev-btn selected-high" data-sev="high" onclick="selectSeverity(this,'high')">🟠 High</button>
+                                <button class="sev-btn" data-sev="critical" onclick="selectSeverity(this,'critical')">🔴 Critical</button>
+                            </div>
+                        </div>
+
+                        <!-- Step 3: Details -->
+                        <div class="form-section" style="margin-bottom:24px;">
+                            <p style="font-size:13px;color:#718096;margin-bottom:16px;font-weight:600;font-family:'Space Grotesk',sans-serif;letter-spacing:0.5px;text-transform:uppercase;">
+                                3 · Describe the Situation <span style="color:#ff6b6b">*</span>
+                            </p>
+                            <div class="field-group">
+                                <textarea class="field-textarea" id="description" placeholder="Describe what is happening, exact location within the zone, number of people affected..."></textarea>
+                            </div>
+                            <div class="field-row">
+                                <div class="field-group" style="margin-bottom:0;">
+                                    <label class="field-label">Your Name</label>
+                                    <input type="text" class="field-input" id="reporter-name" placeholder="Optional">
+                                </div>
+                                <div class="field-group" style="margin-bottom:0;">
+                                    <label class="field-label">Phone Number</label>
+                                    <input type="tel" class="field-input" id="reporter-phone" placeholder="Optional">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- GPS strip -->
+                        <div class="gps-strip" id="gps-strip">
+                            <i class="fa-solid fa-location-crosshairs"></i>
+                            <div class="gps-text">
+                                <span id="gps-text-main">Detecting your location...</span><br>
+                                <span class="gps-status" id="gps-status-text"></span>
+                            </div>
+                            <div class="spinner" id="gps-spinner"></div>
+                        </div>
+
+                        <!-- Submit -->
+                        <button class="submit-btn" id="submit-btn" onclick="submitReport()">
+                            <i class="fa-solid fa-paper-plane"></i>
+                            Send Emergency Report
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Success state -->
+                <div class="glass-card" id="success-state" style="padding:28px;">
+                    <div class="success-icon">✅</div>
+                    <h2 style="font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:700;margin-bottom:8px;">Help is on the way</h2>
+                    <p style="color:#718096;font-size:15px;margin-bottom:12px;">Your emergency has been reported and response units have been notified.</p>
+                    <div class="success-id" id="success-report-id"></div>
+
+                    <!-- Live tracker injected here after success -->
+                    <div id="live-tracker" style="margin-top:24px;"></div>
+
+                    <button onclick="resetForm()" style="margin-top:24px;" class="submit-btn" style="background:rgba(255,255,255,0.08);box-shadow:none;">
+                        <i class="fa-solid fa-plus"></i> Report Another Emergency
+                    </button>
+                </div>
+            </div>
+
+            <!-- RIGHT: Sidebar -->
+            <div class="emergency-sidebar">
+
+                <!-- Emergency hotlines -->
+                <div class="sidebar-section">
+                    <div class="sidebar-title">Emergency Hotlines</div>
+                    <div style="display:flex;flex-direction:column;gap:8px;">
+                        <a href="tel:199" class="hotline-card">
+                            <div class="hotline-icon">🚑</div>
+                            <div class="hotline-info">
+                                <strong>Medical — 199</strong>
+                                <span>Ambulance & first aid</span>
+                            </div>
+                        </a>
+                        <a href="tel:198" class="hotline-card">
+                            <div class="hotline-icon">🚒</div>
+                            <div class="hotline-info">
+                                <strong>Fire Service — 198</strong>
+                                <span>Fire & rescue</span>
+                            </div>
+                        </a>
+                        <a href="tel:112" class="hotline-card">
+                            <div class="hotline-icon">👮</div>
+                            <div class="hotline-info">
+                                <strong>Security — 112</strong>
+                                <span>Police & security</span>
+                            </div>
+                        </a>
+                        <a href="tel:0800CAMPEASE" class="hotline-card">
+                            <div class="hotline-icon">🏕️</div>
+                            <div class="hotline-info">
+                                <strong>Camp Control</strong>
+                                <span>On-site operations</span>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Nearest units -->
+                <div class="sidebar-section">
+                    <div class="sidebar-title">Nearest Response Units</div>
+                    <div style="display:flex;flex-direction:column;gap:8px;">
+                        <div class="glass-card" style="padding:14px;display:flex;align-items:center;gap:10px;">
+                            <div style="width:36px;height:36px;border-radius:8px;background:rgba(52,199,89,0.15);display:flex;align-items:center;justify-content:center;color:#34c759;font-size:16px;">🚑</div>
+                            <div>
+                                <div style="font-size:13px;font-weight:600;color:#e2e8f0;font-family:'Space Grotesk',sans-serif;">Medical Unit A</div>
+                                <div style="font-size:11px;color:#718096;">~2 min away · <span style="color:#34c759;">Available</span></div>
+                            </div>
+                        </div>
+                        <div class="glass-card" style="padding:14px;display:flex;align-items:center;gap:10px;">
+                            <div style="width:36px;height:36px;border-radius:8px;background:rgba(255,146,43,0.15);display:flex;align-items:center;justify-content:center;color:#ff922b;font-size:16px;">🚒</div>
+                            <div>
+                                <div style="font-size:13px;font-weight:600;color:#e2e8f0;font-family:'Space Grotesk',sans-serif;">Fire Unit B</div>
+                                <div style="font-size:11px;color:#718096;">~4 min away · <span style="color:#34c759;">Standby</span></div>
+                            </div>
+                        </div>
+                        <div class="glass-card" style="padding:14px;display:flex;align-items:center;gap:10px;">
+                            <div style="width:36px;height:36px;border-radius:8px;background:rgba(99,179,237,0.15);display:flex;align-items:center;justify-content:center;color:#63b3ed;font-size:16px;">👮</div>
+                            <div>
+                                <div style="font-size:13px;font-weight:600;color:#e2e8f0;font-family:'Space Grotesk',sans-serif;">Security Team C</div>
+                                <div style="font-size:11px;color:#718096;">~1 min away · <span style="color:#34c759;">Patrolling</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Safety tips (dynamic by type) -->
+                <div class="sidebar-section">
+                    <div class="sidebar-title">Safety Guidance</div>
+                    <div class="glass-card" style="padding:16px;" id="safety-tips">
+                        <div style="color:#4a5568;font-size:13px;text-align:center;padding:12px 0;">
+                            <i class="fa-solid fa-circle-info" style="font-size:20px;margin-bottom:8px;display:block;"></i>
+                            Select an emergency type to see relevant safety tips.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- SOS floating button -->
+<button id="sos-btn" onclick="triggerSOS()" title="SOS — Tap for immediate help">
+    <div class="sos-rings">
+        <div class="pulse-ring" style="color:#ff3b30;"></div>
+        <div class="pulse-ring" style="color:#ff3b30;"></div>
+    </div>
+    SOS
+</button>
+
+<!-- Toast container -->
+<div id="toast-container"></div>
+
+<script src="{% static 'js/emergency_report.js' %}"></script>
+</body>
+</html>

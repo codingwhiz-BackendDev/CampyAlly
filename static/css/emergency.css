@@ -1,0 +1,252 @@
+/* =============================================================================
+   emergency.css  —  Shared styles for emergency reporting + dashboard
+   Matches CampEase aesthetic: dark theme, DM Sans, Space Grotesk, orbs, glass
+   ============================================================================= */
+
+/* ── Emergency type colours ─────────────────────────────────────────────── */
+:root {
+    --e-medical:  #ff6b6b;
+    --e-fire:     #ff922b;
+    --e-security: #cc5de8;
+    --e-missing:  #339af0;
+    --e-traffic:  #ffd43b;
+    --e-stampede: #ff4d4d;
+    --e-other:    #94a3b8;
+
+    --sev-critical: #ff3b30;
+    --sev-high:     #ff6b35;
+    --sev-medium:   #ffcc00;
+    --sev-low:      #34c759;
+
+    --status-reported:    #63b3ed;
+    --status-dispatched:  #ffd43b;
+    --status-on_scene:    #ff922b;
+    --status-resolved:    #34c759;
+    --status-false_alarm: #718096;
+
+    --glass-bg:     rgba(255,255,255,0.95);
+    --glass-border: rgba(0,0,0,0.12);
+    --glass-blur:   blur(20px);
+}
+
+/* ── Emergency type icon map ─────────────────────────────────────────────── */
+.etype-medical  { --etype-color: var(--e-medical); }
+.etype-fire     { --etype-color: var(--e-fire); }
+.etype-security { --etype-color: var(--e-security); }
+.etype-missing  { --etype-color: var(--e-missing); }
+.etype-traffic  { --etype-color: var(--e-traffic); }
+.etype-stampede { --etype-color: var(--e-stampede); }
+.etype-other    { --etype-color: var(--e-other); }
+
+/* ── Severity badges ─────────────────────────────────────────────────────── */
+.sev-badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 3px 10px; border-radius: 20px;
+    font-size: 11px; font-weight: 700;
+    font-family: 'Space Grotesk', sans-serif;
+    letter-spacing: 0.5px; text-transform: uppercase;
+}
+.sev-critical { background: rgba(255,59,48,0.2);  color: var(--sev-critical); border: 1px solid rgba(255,59,48,0.3); }
+.sev-high     { background: rgba(255,107,53,0.2); color: var(--sev-high);     border: 1px solid rgba(255,107,53,0.3); }
+.sev-medium   { background: rgba(255,204,0,0.2);  color: var(--sev-medium);   border: 1px solid rgba(255,204,0,0.3); }
+.sev-low      { background: rgba(52,199,89,0.2);  color: var(--sev-low);      border: 1px solid rgba(52,199,89,0.3); }
+
+/* ── Status badges ───────────────────────────────────────────────────────── */
+.status-badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 4px 10px; border-radius: 20px;
+    font-size: 11px; font-weight: 700;
+    font-family: 'Space Grotesk', sans-serif; letter-spacing: 0.3px;
+}
+.status-badge::before {
+    content: ''; width: 6px; height: 6px;
+    border-radius: 50%; background: currentColor;
+}
+.status-reported    { background: rgba(99,179,237,0.15); color: var(--status-reported); }
+.status-dispatched  { background: rgba(255,212,59,0.15); color: var(--status-dispatched); animation: pulse-badge 2s infinite; }
+.status-on_scene    { background: rgba(255,146,43,0.15); color: var(--status-on_scene);  animation: pulse-badge 1.5s infinite; }
+.status-resolved    { background: rgba(52,199,89,0.15);  color: var(--status-resolved); }
+.status-false_alarm { background: rgba(113,128,150,0.15);color: var(--status-false_alarm); }
+
+@keyframes pulse-badge {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.6; }
+}
+
+/* ── Glass card ──────────────────────────────────────────────────────────── */
+.glass-card {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border-radius: 16px;
+}
+
+/* ── Pulse ring (SOS / critical alerts) ─────────────────────────────────── */
+.pulse-ring {
+    position: absolute; inset: -8px;
+    border-radius: 50%;
+    border: 2px solid currentColor;
+    opacity: 0;
+    animation: pulse-ring 2s ease-out infinite;
+}
+.pulse-ring:nth-child(2) { animation-delay: 0.5s; }
+.pulse-ring:nth-child(3) { animation-delay: 1s; }
+@keyframes pulse-ring {
+    0%   { transform: scale(0.9); opacity: 0.8; }
+    100% { transform: scale(1.8); opacity: 0; }
+}
+
+/* ── Live dot ────────────────────────────────────────────────────────────── */
+.live-dot {
+    display: inline-block; width: 8px; height: 8px;
+    border-radius: 50%; background: #ff3b30;
+    animation: blink 1.2s ease-in-out infinite;
+}
+.live-dot.green { background: #34c759; }
+@keyframes blink {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50%       { opacity: 0.4; transform: scale(0.7); }
+}
+
+/* ── Timeline ────────────────────────────────────────────────────────────── */
+.timeline {
+    position: relative;
+    padding-left: 24px;
+}
+.timeline::before {
+    content: '';
+    position: absolute; left: 8px; top: 0; bottom: 0;
+    width: 1px; background: var(--glass-border);
+}
+.timeline-item {
+    position: relative; padding-bottom: 20px;
+}
+.timeline-item:last-child { padding-bottom: 0; }
+.timeline-dot {
+    position: absolute; left: -20px; top: 3px;
+    width: 10px; height: 10px; border-radius: 50%;
+    border: 2px solid var(--glass-border);
+    background: #1a1a2e;
+}
+.timeline-dot.active {
+    background: #63b3ed;
+    border-color: #63b3ed;
+    box-shadow: 0 0 8px rgba(99,179,237,0.5);
+}
+.timeline-time {
+    font-size: 11px; color: #64748b;
+    font-family: 'DM Mono', monospace;
+    margin-bottom: 2px;
+}
+.timeline-label {
+    font-size: 13px; font-weight: 600;
+    color: #1a1a2e; font-family: 'Space Grotesk', sans-serif;
+}
+.timeline-note { font-size: 12px; color: #64748b; margin-top: 2px; }
+
+/* ── Hotline card ────────────────────────────────────────────────────────── */
+.hotline-card {
+    background: linear-gradient(135deg, rgba(255,59,48,0.15), rgba(255,107,53,0.08));
+    border: 1px solid rgba(255,59,48,0.25);
+    border-radius: 12px;
+    padding: 16px;
+    display: flex; align-items: center; gap: 12px;
+    text-decoration: none; transition: all 0.2s;
+}
+.hotline-card:hover {
+    background: linear-gradient(135deg, rgba(255,59,48,0.25), rgba(255,107,53,0.15));
+    transform: translateY(-2px);
+}
+.hotline-icon {
+    width: 44px; height: 44px; border-radius: 10px;
+    background: rgba(255,59,48,0.2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; flex-shrink: 0;
+}
+.hotline-info strong {
+    display: block; color: #1a1a2e;
+    font-family: 'Space Grotesk', sans-serif; font-size: 15px;
+}
+.hotline-info span { font-size: 12px; color: #64748b; }
+
+/* ── Spinner ─────────────────────────────────────────────────────────────── */
+.spinner {
+    width: 20px; height: 20px;
+    border: 2px solid rgba(255,255,255,0.15);
+    border-top-color: currentColor;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    display: inline-block;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Map placeholder ─────────────────────────────────────────────────────── */
+.map-placeholder {
+    background: rgba(255,255,255,0.02);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    height: 200px;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 8px; color: #4a5568;
+}
+.map-placeholder i { font-size: 28px; }
+.map-placeholder span { font-size: 13px; }
+
+/* ── Toast notification ──────────────────────────────────────────────────── */
+#toast-container {
+    position: fixed; bottom: 100px; right: 24px;
+    z-index: 9999; display: flex; flex-direction: column; gap: 8px;
+}
+.toast {
+    background: #ffffff; border: 1px solid rgba(0,0,0,0.12);
+    border-radius: 10px; padding: 14px 18px;
+    display: flex; align-items: center; gap: 10px;
+    font-size: 14px; color: #1a1a2e;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+    animation: toast-in 0.3s ease;
+    min-width: 280px;
+}
+.toast.success { border-color: rgba(52,199,89,0.4); }
+.toast.error   { border-color: rgba(255,59,48,0.4); }
+@keyframes toast-in {
+    from { opacity: 0; transform: translateX(20px); }
+    to   { opacity: 1; transform: translateX(0); }
+}
+
+/* ── Responsive ───────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+    .hotline-card {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .hotline-icon {
+        margin: 0 auto;
+    }
+    
+    #toast-container {
+        bottom: 24px;
+        right: 24px;
+        left: 24px;
+    }
+    
+    .toast {
+        min-width: auto;
+    }
+    
+    .timeline {
+        padding-left: 16px;
+    }
+    
+    .timeline::before {
+        left: 4px;
+    }
+    
+    .timeline-dot {
+        left: -16px;
+        width: 8px;
+        height: 8px;
+    }
+}

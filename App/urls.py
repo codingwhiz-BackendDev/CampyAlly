@@ -20,9 +20,33 @@ urlpatterns = [
 
     # /parking/api/zone/1/
     path('api/zone/<int:zone_id>/', views.api_zone_status, name='api_zone_status'),
-    
-    #emergency
-    path('emergency_dashboard', views.emergency_dashboard, name='emergency_dashboard')
+
+    # /parking/emergency_page/
+    path('emergency_page/', views.emergency_page, name='emergency_page'),
+
+    # /parking/api/report/ (POST) - Emergency reporting API
+    path('api/report/', views.api_report_emergency, name='api_report_emergency'),
+
+    # /parking/api/status/<uuid>/ - Get emergency report status
+    path('api/emergency-status/<uuid:report_id>/', views.api_report_status, name='api_report_status'),
+
+    # /parking/api/update/<uuid>/ (POST) - Update emergency status
+    path('api/emergency-update/<uuid:report_id>/', views.api_update_status, name='api_update_status'),
+
+    # /parking/api/feed/ - Live emergency feed
+    path('api/emergency-feed/', views.api_live_feed, name='api_live_feed'),
+
+    # /parking/lost-found/ - Lost & Found system
+    path('lost-found/', views.lost_found, name='lost_found'),
+
+    # /parking/api/lost-found/submit/ - Submit lost/found report
+    path('api/lost-found/submit/', views.api_submit_lost_found, name='api_submit_lost_found'),
+
+    # /parking/api/lost-found/list/ - Get lost/found reports
+    path('api/lost-found/list/', views.api_lost_found_list, name='api_lost_found_list'),
+
+    # /parking/api/lost-found/<id>/update/ - Update status
+    path('api/lost-found/<uuid:report_id>/update/', views.api_update_lost_found_status, name='api_update_lost_found_status'),
 ]
 
 # Security API routes (mounted separately)
@@ -51,3 +75,7 @@ security_urlpatterns = [
     # /security/api/sessions
     path('api/sessions/', views.api_sessions, name='api_sessions'),
 ]
+
+
+
+ 

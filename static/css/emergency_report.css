@@ -1,0 +1,568 @@
+/* =============================================================================
+   emergency_report.css — Public emergency reporting page
+   ============================================================================= */
+
+/* ── Page layout ─────────────────────────────────────────────────────────── */
+#emergency-page {
+    min-height: 100vh;
+    padding: 120px 0 80px;
+    background: #f8fafc;
+}
+
+/* ── Hero banner ─────────────────────────────────────────────────────────── */
+.emergency-hero {
+    text-align: center;
+    margin-bottom: 48px;
+}
+
+.emergency-hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255, 59, 48, 0.1);
+    border: 1px solid rgba(255, 59, 48, 0.3);
+    border-radius: 20px;
+    padding: 6px 16px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #ff3b30;
+    font-family: 'Space Grotesk', sans-serif;
+    letter-spacing: 0.5px;
+    margin-bottom: 20px;
+    animation: fade-in 0.5s ease;
+}
+
+.emergency-hero h1 {
+    font-size: clamp(36px, 6vw, 60px);
+    font-weight: 700;
+    letter-spacing: -1.5px;
+    line-height: 1;
+    margin-bottom: 14px;
+}
+
+.emergency-hero p {
+    font-size: 16px;
+    color: #718096;
+    max-width: 480px;
+    margin: 0 auto;
+}
+
+/* ── Type selector grid ──────────────────────────────────────────────────── */
+.type-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 12px;
+    margin-bottom: 32px;
+}
+
+.type-btn {
+    background: rgba(255, 255, 255, 0.9);
+    border: 2px solid rgba(0, 0, 0, 0.1);
+    border-radius: 14px;
+    padding: 18px 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: #1a1a2e;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.type-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at center, var(--etype-color, #fff) 0%, transparent 70%);
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.type-btn:hover {
+    border-color: var(--etype-color, rgba(0, 0, 0, 0.2));
+    color: #1a1a2e;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.type-btn:hover::before {
+    opacity: 0.05;
+}
+
+.type-btn.selected {
+    border-color: var(--etype-color, rgba(0, 0, 0, 0.3));
+    background: rgba(0, 0, 0, 0.05);
+    color: #1a1a2e;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.1), inset 0 0 20px rgba(0, 0, 0, 0.02);
+}
+
+.type-btn.selected::before {
+    opacity: 0.08;
+}
+
+.type-btn-icon {
+    font-size: 26px;
+    color: var(--etype-color, #718096);
+    transition: transform 0.2s;
+}
+
+.type-btn:hover .type-btn-icon {
+    transform: scale(1.15);
+}
+
+.type-btn-label {
+    font-size: 12px;
+    font-weight: 600;
+    font-family: 'Space Grotesk', sans-serif;
+    text-align: center;
+    line-height: 1.3;
+}
+
+/* ── Severity selector ───────────────────────────────────────────────────── */
+.severity-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 24px;
+}
+
+.sev-btn {
+    padding: 8px 16px;
+    border-radius: 8px;
+    border: 1px solid rgba(0, 0, 0, 0.15);
+    background: rgba(255, 255, 255, 0.9);
+    color: #1a1a2e;
+    font-size: 13px;
+    font-weight: 600;
+    font-family: 'Space Grotesk', sans-serif;
+    cursor: pointer;
+    transition: all 0.15s;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+.sev-btn:hover {
+    color: #1a1a2e;
+    border-color: rgba(0, 0, 0, 0.25);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+.sev-btn.selected-critical {
+    background: rgba(255, 59, 48, 0.15);
+    border-color: rgba(255, 59, 48, 0.4);
+    color: var(--sev-critical);
+}
+
+.sev-btn.selected-high {
+    background: rgba(255, 107, 53, 0.15);
+    border-color: rgba(255, 107, 53, 0.4);
+    color: var(--sev-high);
+}
+
+.sev-btn.selected-medium {
+    background: rgba(255, 204, 0, 0.15);
+    border-color: rgba(255, 204, 0, 0.4);
+    color: var(--sev-medium);
+}
+
+.sev-btn.selected-low {
+    background: rgba(52, 199, 89, 0.15);
+    border-color: rgba(52, 199, 89, 0.4);
+    color: var(--sev-low);
+}
+
+/* ── Form fields ─────────────────────────────────────────────────────────── */
+.field-group {
+    margin-bottom: 20px;
+}
+
+.field-label {
+    display: block;
+    font-size: 13px;
+    color: #1a1a2e;
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+
+.field-label .required {
+    color: #ff6b6b;
+    margin-left: 3px;
+}
+
+.field-input,
+.field-textarea {
+    width: 100%;
+    padding: 12px 16px;
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid rgba(0, 0, 0, 0.15);
+    border-radius: 10px;
+    color: #1a1a2e;
+    font-size: 14px;
+    font-family: 'DM Sans', sans-serif;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    outline: none;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+.field-input:focus,
+.field-textarea:focus {
+    border-color: rgba(16, 185, 129, 0.5);
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+}
+
+.field-input::placeholder,
+.field-textarea::placeholder {
+    color: #64748b;
+}
+
+.field-textarea {
+    resize: vertical;
+    min-height: 100px;
+}
+
+.field-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+@media (max-width: 600px) {
+    .field-row {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ── GPS strip ───────────────────────────────────────────────────────────── */
+.gps-strip {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    background: rgba(99, 179, 237, 0.07);
+    border: 1px solid rgba(99, 179, 237, 0.2);
+    border-radius: 10px;
+    margin-bottom: 20px;
+    font-size: 13px;
+    color: #63b3ed;
+}
+
+.gps-strip i {
+    font-size: 16px;
+}
+
+.gps-strip .gps-text {
+    flex: 1;
+}
+
+.gps-strip .gps-status {
+    font-size: 11px;
+    color: #4a5568;
+}
+
+/* ── Submit button ───────────────────────────────────────────────────────── */
+.submit-btn {
+    width: 100%;
+    padding: 16px;
+    background: linear-gradient(135deg, #ff3b30, #ff6b35);
+    border: none;
+    border-radius: 12px;
+    color: #fff;
+    font-size: 16px;
+    font-weight: 700;
+    font-family: 'Space Grotesk', sans-serif;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    letter-spacing: 0.3px;
+    box-shadow: 0 4px 20px rgba(255, 59, 48, 0.3);
+}
+
+.submit-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(255, 59, 48, 0.4);
+}
+
+.submit-btn:active {
+    transform: translateY(0);
+}
+
+.submit-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* ── SOS floating button ─────────────────────────────────────────────────── */
+#sos-btn {
+    position: fixed;
+    bottom: 28px;
+    right: 28px;
+    z-index: 999;
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #ff3b30, #c0392b);
+    border: none;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 900;
+    font-family: 'Space Grotesk', sans-serif;
+    letter-spacing: 1px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 24px rgba(255, 59, 48, 0.6);
+    animation: sos-pulse 2s ease-in-out infinite;
+}
+
+@keyframes sos-pulse {
+
+    0%,
+    100% {
+        box-shadow: 0 4px 24px rgba(255, 59, 48, 0.6);
+    }
+
+    50% {
+        box-shadow: 0 4px 40px rgba(255, 59, 48, 0.9), 0 0 0 12px rgba(255, 59, 48, 0.1);
+    }
+}
+
+#sos-btn .sos-rings {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    pointer-events: none;
+}
+
+/* ── Success state ───────────────────────────────────────────────────────── */
+#success-state {
+    display: none;
+    text-align: center;
+    padding: 48px 24px;
+    animation: fade-in 0.5s ease;
+}
+
+.success-icon {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: rgba(52, 199, 89, 0.15);
+    border: 2px solid rgba(52, 199, 89, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 36px;
+    margin: 0 auto 20px;
+    animation: scale-in 0.4s ease;
+}
+
+@keyframes scale-in {
+    from {
+        transform: scale(0.5);
+        opacity: 0;
+    }
+
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.success-id {
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    color: #63b3ed;
+    background: rgba(99, 179, 237, 0.1);
+    padding: 6px 14px;
+    border-radius: 6px;
+    display: inline-block;
+    margin-top: 8px;
+}
+
+/* ── Hotlines sidebar ────────────────────────────────────────────────────── */
+.sidebar-section {
+    margin-bottom: 28px;
+}
+
+.sidebar-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: #1a1a2e;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    font-family: 'Space Grotesk', sans-serif;
+    margin-bottom: 12px;
+}
+
+/* ── Live tracker ────────────────────────────────────────────────────────── */
+#live-tracker {
+    display: none;
+}
+
+#live-tracker.visible {
+    display: block;
+}
+
+.tracker-card {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 14px;
+    padding: 20px;
+    margin-top: 16px;
+}
+
+.tracker-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+}
+
+.tracker-title {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    color: #1a1a2e;
+}
+
+/* ── Fade in ─────────────────────────────────────────────────────────────── */
+@keyframes fade-in {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.fade-in {
+    animation: fade-in 0.4s ease both;
+}
+
+/* ── Emergency Layout ───────────────────────────────────────────────────────── */
+.emergency-layout {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 32px;
+    align-items: start;
+}
+
+.emergency-main {
+    min-width: 0;
+}
+
+.emergency-sidebar {
+    position: sticky;
+    top: 90px;
+}
+
+/* ── Responsive ───────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+    #emergency-page {
+        padding: 100px 0 60px;
+    }
+    
+    .emergency-layout {
+        grid-template-columns: 1fr;
+    }
+    
+    .emergency-sidebar {
+        position: static;
+        order: 2;
+    }
+    
+    .emergency-hero {
+        padding: 24px 20px;
+    }
+    
+    .emergency-hero h1 {
+        font-size: 28px;
+    }
+    
+    .emergency-hero p {
+        font-size: 14px;
+    }
+    
+    .type-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+    }
+    
+    .type-btn {
+        padding: 14px 10px;
+    }
+    
+    .type-btn i {
+        font-size: 24px;
+    }
+    
+    .type-btn span {
+        font-size: 12px;
+    }
+    
+    .form-card {
+        padding: 24px 20px;
+    }
+    
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+    
+    .field-row {
+        grid-template-columns: 1fr;
+    }
+    
+    .gps-strip {
+        flex-direction: column;
+        text-align: center;
+        gap: 8px;
+    }
+    
+    .submit-btn {
+        padding: 14px;
+    }
+    
+    .success-state {
+        padding: 40px 20px;
+    }
+    
+    .success-icon {
+        width: 80px;
+        height: 80px;
+        font-size: 32px;
+    }
+    
+    .success-title {
+        font-size: 24px;
+    }
+    
+    .sidebar-section {
+        margin-top: 24px;
+    }
+    
+    .hotline-card {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .hotline-icon {
+        margin: 0 auto;
+    }
+    
+    #sos-btn {
+        bottom: 20px;
+        right: 20px;
+        width: 60px;
+        height: 60px;
+        font-size: 14px;
+    }
+}

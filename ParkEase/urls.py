@@ -11,7 +11,9 @@ urlpatterns = [
     path('parking/', include('App.urls')),
     path('security/', landing_views.security_dashboard, name='security_dashboard'),
     path('security/', include(security_urlpatterns)),
-    path('emergency_dashboard/', landing_views.emergency_dashboard, name ='landing_views')
+    path('emergency/', landing_views.emergency_page, name='emergency_page'),
+    path('emergency_dashboard/', landing_views.emergency_dashboard, name='emergency_dashboard'),
+    path('lost-person/', landing_views.lost_found, name='lost_person')
 ]
 
 if settings.DEBUG:

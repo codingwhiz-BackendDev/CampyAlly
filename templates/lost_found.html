@@ -1,0 +1,319 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lost & Found — CampEase</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="{% static 'css/index.css' %}">
+    <link rel="stylesheet" href="{% static 'css/lost_found.css' %}">
+</head>
+<body>
+
+<!-- BG ORBS -->
+<div class="bg-orbs">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+</div>
+
+<!-- NAV -->
+<nav class="site-nav">
+    <div class="container">
+        <div class="nav-inner">
+            <a href="/" class="nav-logo">
+                <div class="nav-logo-mark">
+                    <div class="logo-glow"></div>
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                </div>
+                <div class="logo-text">
+                    <span class="logo-main">CampEase</span>
+                    <span class="logo-badge">Lost & Found</span>
+                </div>
+            </a>
+            <div class="nav-links-wrap">
+                <a href="/" class="nav-link">Home</a>
+                <a href="/parking/" class="nav-link">Parking</a>
+                <a href="/emergency/" class="nav-link">Emergency</a>
+                <a href="/lost-person/" class="nav-link active">Lost & Found</a>
+            </div>
+        </div>
+    </div>
+</nav>
+
+<!-- MAIN -->
+<section id="lost-found-page">
+    <div class="container">
+        
+        <!-- Header -->
+        <div class="lf-header">
+            <div>
+                <h1>Lost & Found <span class="gradient-text">Recovery System</span></h1>
+                <p>Report lost persons, found persons, lost items, or found items — all in one place.</p>
+            </div>
+            <div class="lf-stats">
+                <div class="stat-card">
+                    <div class="stat-value">{{ lost_persons }}</div>
+                    <div class="stat-label">Lost Persons</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">{{ found_persons }}</div>
+                    <div class="stat-label">Found Persons</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">{{ lost_items }}</div>
+                    <div class="stat-label">Lost Items</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">{{ found_items }}</div>
+                    <div class="stat-label">Found Items</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Unified Form -->
+        <div class="lf-form-section">
+            <div class="glass-card">
+                <div class="form-header">
+                    <h2>Submit Report</h2>
+                    <p>Fill in the details below to submit a lost or found report.</p>
+                </div>
+
+                <form id="lf-form" enctype="multipart/form-data">
+                    <!-- Category Selector -->
+                    <div class="form-group">
+                        <label class="form-label">Category *</label>
+                        <select class="form-select" id="category" required onchange="toggleCategoryFields()">
+                            <option value="">Select category...</option>
+                            <option value="lost_person">🔴 Lost Person</option>
+                            <option value="found_person">🟢 Found Person</option>
+                            <option value="lost_item">🔵 Lost Item</option>
+                            <option value="found_item">🟣 Found Item</option>
+                        </select>
+                    </div>
+
+                    <!-- Common Fields -->
+                    <div class="form-group">
+                        <label class="form-label" id="title-label">Title / Name *</label>
+                        <input type="text" class="form-input" id="title" required placeholder="Enter title or name...">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Description *</label>
+                        <textarea class="form-textarea" id="description" required placeholder="Provide detailed description..."></textarea>
+                    </div>
+
+                    <!-- Image Upload -->
+                    <div class="form-group">
+                        <label class="form-label">Image (Optional)</label>
+                        <div class="image-upload-area" id="image-drop-zone">
+                            <input type="file" id="image-input" accept="image/*" multiple style="display: none;" onchange="handleImageUpload(event)">
+                            <div class="upload-placeholder">
+                                <i class="fa-solid fa-cloud-arrow-up"></i>
+                                <p>Drag & drop images here or click to upload</p>
+                                <span>Supports: JPG, PNG, GIF</span>
+                            </div>
+                            <div class="image-preview-container" id="image-preview"></div>
+                        </div>
+                        <button type="button" class="camera-btn" onclick="openCamera()">
+                            <i class="fa-solid fa-camera"></i> Use Camera
+                        </button>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Location *</label>
+                            <input type="text" class="form-input" id="location" required placeholder="Last seen / found location...">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Date & Time</label>
+                            <input type="datetime-local" class="form-input" id="date_time">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Phone Number *</label>
+                            <input type="tel" class="form-input" id="phone_number" required placeholder="Contact number...">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Urgency Level</label>
+                            <select class="form-select" id="urgency">
+                                <option value="low">🟢 Low</option>
+                                <option value="medium" selected>🟡 Medium</option>
+                                <option value="high">🔴 High</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Person-specific Fields -->
+                    <div id="person-fields" style="display: none;">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">Age</label>
+                                <input type="number" class="form-input" id="age" placeholder="Age...">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Gender (Optional)</label>
+                                <select class="form-select" id="gender">
+                                    <option value="">Select gender...</option>
+                                    <option value="male">Male</option>
+                                    <option value="female">Female</option>
+                                    <option value="other">Other</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Item-specific Fields -->
+                    <div id="item-fields" style="display: none;">
+                        <div class="form-group">
+                            <label class="form-label">Item Type</label>
+                            <select class="form-select" id="item_type">
+                                <option value="">Select item type...</option>
+                                <option value="phone">Phone</option>
+                                <option value="bag">Bag/Wallet</option>
+                                <option value="id_card">ID Card</option>
+                                <option value="keys">Keys</option>
+                                <option value="book">Book</option>
+                                <option value="clothing">Clothing</option>
+                                <option value="electronics">Electronics</option>
+                                <option value="jewelry">Jewelry</option>
+                                <option value="documents">Documents</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Reporter Info -->
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Your Name (Optional)</label>
+                            <input type="text" class="form-input" id="reporter_name" placeholder="Your name...">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Your Email (Optional)</label>
+                            <input type="email" class="form-input" id="reporter_email" placeholder="Your email...">
+                        </div>
+                    </div>
+
+                    <button type="submit" class="submit-btn">
+                        <i class="fa-solid fa-paper-plane"></i> Submit Report
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Active Reports Section -->
+        <div class="lf-reports-section">
+            <div class="section-header">
+                <h2>Active Reports</h2>
+                <div class="filters">
+                    <select class="filter-select" id="category-filter" onchange="filterReports()">
+                        <option value="">All Categories</option>
+                        <option value="lost_person">Lost Persons</option>
+                        <option value="found_person">Found Persons</option>
+                        <option value="lost_item">Lost Items</option>
+                        <option value="found_item">Found Items</option>
+                    </select>
+                    <select class="filter-select" id="status-filter" onchange="filterReports()">
+                        <option value="">All Status</option>
+                        <option value="active">Active</option>
+                        <option value="found">Found</option>
+                        <option value="claimed">Claimed</option>
+                        <option value="resolved">Resolved</option>
+                    </select>
+                    <div class="search-box">
+                        <i class="fa-solid fa-search"></i>
+                        <input type="text" placeholder="Search..." id="search-input" oninput="filterReports()">
+                    </div>
+                </div>
+            </div>
+
+            <div class="reports-grid" id="reports-grid">
+                {% for report in reports %}
+                <div class="report-card" data-category="{{ report.category }}" data-status="{{ report.status }}">
+                    <div class="report-image">
+                        {% if report.image %}
+                        <img src="{{ report.image.url }}" alt="{{ report.title }}">
+                        {% else %}
+                        <div class="no-image">
+                            <i class="fa-solid fa-image"></i>
+                        </div>
+                        {% endif %}
+                        <span class="category-badge category-{{ report.category }}">
+                            {{ report.get_category_display }}
+                        </span>
+                    </div>
+                    <div class="report-content">
+                        <h3>{{ report.title }}</h3>
+                        <p class="report-description">{{ report.description|truncatewords:20 }}</p>
+                        <div class="report-meta">
+                            <span><i class="fa-solid fa-location-dot"></i> {{ report.location }}</span>
+                            <span><i class="fa-solid fa-clock"></i> {{ report.time_since_created }}</span>
+                        </div>
+                        <div class="report-footer">
+                            <span class="status-badge status-{{ report.status }}">{{ report.get_status_display }}</span>
+                            <span class="urgency-badge urgency-{{ report.urgency }}">{{ report.get_urgency_display }}</span>
+                        </div>
+                        <button class="contact-btn" onclick="showContact('{{ report.phone_number }}')">
+                            <i class="fa-solid fa-phone"></i> Contact
+                        </button>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="no-reports">
+                    <i class="fa-solid fa-clipboard-check"></i>
+                    <h3>No Reports Yet</h3>
+                    <p>Be the first to submit a lost or found report.</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Found Items Section -->
+        <div class="lf-found-section">
+            <div class="section-header">
+                <h2>Recently Found Items</h2>
+                <a href="#" class="view-all-link">View All <i class="fa-solid fa-arrow-right"></i></a>
+            </div>
+            <div class="found-items-grid">
+                {% for report in reports|slice:":4" %}
+                {% if report.is_found %}
+                <div class="found-item-card">
+                    <div class="found-item-image">
+                        {% if report.image %}
+                        <img src="{{ report.image.url }}" alt="{{ report.title }}">
+                        {% else %}
+                        <div class="no-image">
+                            <i class="fa-solid fa-image"></i>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="found-item-content">
+                        <h4>{{ report.title }}</h4>
+                        <p>{{ report.description|truncatewords:15 }}</p>
+                        <div class="found-item-meta">
+                            <span><i class="fa-solid fa-location-dot"></i> {{ report.location }}</span>
+                            <span><i class="fa-solid fa-calendar"></i> {{ report.created_at|date:"M d, Y" }}</span>
+                        </div>
+                        <button class="claim-btn">Claim Item</button>
+                    </div>
+                </div>
+                {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+
+    </div>
+</section>
+
+<!-- Toast Container -->
+<div id="toast-container"></div>
+
+<script src="{% static 'js/lost_found.js' %}"></script>
+</body>
+</html>

@@ -6,9 +6,10 @@ from django.views.decorators.http import require_POST, require_GET, require_http
 from django.views.decorators.csrf import csrf_exempt
 from django.utils import timezone
 from django.db import transaction
+from django.db.models import Count
 from django.contrib import messages
 
-from .models import ParkingZone, ParkingSlot, CheckInSession
+from .models import ParkingZone, ParkingSlot, CheckInSession, EmergencyReport,EmergencyTimeline, LostFoundReport
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -491,5 +492,374 @@ def api_sessions(request):
     ], safe=False)
     
     
+
+
+
+def _get_client_ip(request):
+    x_forwarded = request.META.get('HTTP_X_FORWARDED_FOR')
+    if x_forwarded:
+        return x_forwarded.split(',')[0].strip()
+    return request.META.get('REMOTE_ADDR')
+ 
+ 
+def _report_to_dict(r):
+    return {
+        'id':             str(r.id),
+        'type':           r.emergency_type,
+        'type_display':   r.get_emergency_type_display(),
+        'severity':       r.severity,
+        'status':         r.status,
+        'status_display': r.get_status_display(),
+        'description':    r.description,
+        'reporter_name':  r.reporter_name,
+        'reporter_phone': r.reporter_phone,
+        'location_name':  r.location_name,
+        'latitude':       r.latitude,
+        'longitude':      r.longitude,
+        'reported_at':    r.reported_at.isoformat(),
+        'time_since':     r.time_since_reported(),
+        'is_active':      r.is_active(),
+        'responder_name': r.responder_name,
+        'response_notes': r.response_notes,
+        'timeline': [
+            {
+                'status':     t.status,
+                'note':       t.note,
+                'updated_by': t.updated_by,
+                'timestamp':  t.timestamp.isoformat(),
+            }
+            for t in r.timeline.all()
+        ],
+    }
+ 
+ 
+# ── Public pages ──────────────────────────────────────────────────────────────
+ 
+def emergency_page(request):
+    """Public emergency reporting page."""
+    return render(request, 'emergency.html')
+ 
+ 
 def emergency_dashboard(request):
-    return render(request, 'emergency_dashboard.html')
+    """Admin emergency control center."""
+    reports  = EmergencyReport.objects.prefetch_related('timeline').all()
+    active   = reports.filter(status__in=['reported', 'dispatched', 'on_scene'])
+    resolved = reports.filter(status='resolved')
+ 
+    # Analytics
+    by_type = (
+        reports.values('emergency_type')
+               .annotate(count=Count('id'))
+               .order_by('-count')
+    )
+    by_severity = {
+        'critical': reports.filter(severity='critical').count(),
+        'high':     reports.filter(severity='high').count(),
+        'medium':   reports.filter(severity='medium').count(),
+        'low':      reports.filter(severity='low').count(),
+    }
+ 
+    # Lost & Found integration
+    lf_reports = LostFoundReport.objects.all()
+    lf_active = lf_reports.filter(status='active').count()
+    lf_lost_persons = lf_reports.filter(category='lost_person', status='active').count()
+    lf_found_persons = lf_reports.filter(category='found_person', status='active').count()
+    lf_lost_items = lf_reports.filter(category='lost_item', status='active').count()
+    lf_found_items = lf_reports.filter(category='found_item', status='active').count()
+
+    context = {
+        'reports':     reports[:50],
+        'active':      active,
+        'resolved':    resolved,
+        'total':       reports.count(),
+        'active_count':   active.count(),
+        'resolved_count': resolved.count(),
+        'by_type':     list(by_type),
+        'by_severity': by_severity,
+        'lf_active': lf_active,
+        'lf_lost_persons': lf_lost_persons,
+        'lf_found_persons': lf_found_persons,
+        'lf_lost_items': lf_lost_items,
+        'lf_found_items': lf_found_items,
+    }
+    return render(request, 'emergency_dashboard.html', context)
+ 
+ 
+# ── AJAX: submit report ───────────────────────────────────────────────────────
+ 
+@require_POST
+@csrf_exempt
+def api_report_emergency(request):
+    try:
+        data = json.loads(request.body)
+    except (json.JSONDecodeError, ValueError):
+        return JsonResponse({'success': False, 'error': 'Invalid data'}, status=400)
+ 
+    required = ['emergency_type', 'description']
+    for field in required:
+        if not data.get(field):
+            return JsonResponse({'success': False, 'error': f'Missing {field}'}, status=400)
+ 
+    report = EmergencyReport.objects.create(
+        emergency_type  = data['emergency_type'],
+        severity        = data.get('severity', 'high'),
+        description     = data['description'],
+        reporter_name   = data.get('reporter_name', ''),
+        reporter_phone  = data.get('reporter_phone', ''),
+        latitude        = data.get('latitude'),
+        longitude       = data.get('longitude'),
+        location_name   = data.get('location_name', ''),
+        device_info     = data.get('device_info', ''),
+        ip_address      = _get_client_ip(request),
+        session_token   = request.session.get('session_key', ''),
+    )
+ 
+    # Create first timeline entry
+    EmergencyTimeline.objects.create(
+        emergency  = report,
+        status     = 'reported',
+        note       = 'Emergency reported via public portal.',
+        updated_by = 'System',
+    )
+ 
+    return JsonResponse({
+        'success':   True,
+        'report_id': str(report.id),
+        'message':   'Emergency reported. Help is on the way.',
+        'report':    _report_to_dict(report),
+    })
+ 
+ 
+# ── AJAX: get live status for a report ───────────────────────────────────────
+ 
+@require_GET
+def api_report_status(request, report_id):
+    report = get_object_or_404(EmergencyReport, id=report_id)
+    return JsonResponse(_report_to_dict(report))
+ 
+ 
+# ── AJAX: update status (admin) ───────────────────────────────────────────────
+ 
+@require_POST
+@csrf_exempt
+def api_update_status(request, report_id):
+    report = get_object_or_404(EmergencyReport, id=report_id)
+    try:
+        data = json.loads(request.body)
+    except (json.JSONDecodeError, ValueError):
+        return JsonResponse({'success': False, 'error': 'Invalid JSON'}, status=400)
+ 
+    new_status = data.get('status')
+    valid = [s[0] for s in EmergencyReport.STATUS_CHOICES]
+    if new_status not in valid:
+        return JsonResponse({'success': False, 'error': 'Invalid status'}, status=400)
+ 
+    report.status = new_status
+    if new_status == 'resolved':
+        report.resolved_at = timezone.now()
+    if data.get('responder_name'):
+        report.responder_name = data['responder_name']
+    if data.get('response_notes'):
+        report.response_notes = data['response_notes']
+    report.save()
+ 
+    EmergencyTimeline.objects.create(
+        emergency  = report,
+        status     = new_status,
+        note       = data.get('note', ''),
+        updated_by = data.get('updated_by', 'Admin'),
+    )
+ 
+    return JsonResponse({'success': True, 'report': _report_to_dict(report)})
+ 
+ 
+# ── AJAX: live feed for dashboard ─────────────────────────────────────────────
+ 
+@require_GET
+def api_live_feed(request):
+    reports = EmergencyReport.objects.prefetch_related('timeline').all()[:30]
+    active_count   = EmergencyReport.objects.filter(
+        status__in=['reported', 'dispatched', 'on_scene']
+    ).count()
+    critical_count = EmergencyReport.objects.filter(
+        severity='critical', status__in=['reported', 'dispatched', 'on_scene']
+    ).count()
+ 
+    return JsonResponse({
+        'reports':       [_report_to_dict(r) for r in reports],
+        'active_count':  active_count,
+        'critical_count': critical_count,
+        'total':         EmergencyReport.objects.count(),
+        'timestamp':     timezone.now().isoformat(),
+    })
+
+
+# ── Lost & Found System ─────────────────────────────────────────────────────────
+
+def lost_found(request):
+    """Main page for lost/found persons and items."""
+    all_reports = LostFoundReport.objects.all()
+    reports = all_reports.order_by('-created_at')[:50]
+    
+    # Get counts for dashboard
+    lost_persons = all_reports.filter(category='lost_person', status='active').count()
+    found_persons = all_reports.filter(category='found_person', status='active').count()
+    lost_items = all_reports.filter(category='lost_item', status='active').count()
+    found_items = all_reports.filter(category='found_item', status='active').count()
+    
+    context = {
+        'reports': reports,
+        'lost_persons': lost_persons,
+        'found_persons': found_persons,
+        'lost_items': lost_items,
+        'found_items': found_items,
+    }
+    return render(request, 'lost_found.html', context)
+
+
+def _lost_found_to_dict(report):
+    """Convert LostFoundReport to dict for JSON response."""
+    return {
+        'id': str(report.id),
+        'category': report.category,
+        'category_display': report.get_category_display(),
+        'title': report.title,
+        'description': report.description,
+        'image': report.image.url if report.image else None,
+        'location': report.location,
+        'date_time': report.date_time.isoformat(),
+        'phone_number': report.phone_number,
+        'urgency': report.urgency,
+        'urgency_display': report.get_urgency_display(),
+        'status': report.status,
+        'status_display': report.get_status_display(),
+        'age': report.age,
+        'gender': report.gender,
+        'gender_display': report.get_gender_display() if report.gender else None,
+        'item_type': report.item_type,
+        'item_type_display': report.get_item_type_display() if report.item_type else None,
+        'reporter_name': report.reporter_name,
+        'reporter_email': report.reporter_email,
+        'latitude': report.latitude,
+        'longitude': report.longitude,
+        'created_at': report.created_at.isoformat(),
+        'time_since': report.time_since_created(),
+        'is_person': report.is_person(),
+        'is_item': report.is_item(),
+        'is_lost': report.is_lost(),
+        'is_found': report.is_found(),
+    }
+
+
+@require_POST
+@csrf_exempt
+def api_submit_lost_found(request):
+    """Submit a new lost/found report via AJAX."""
+    # Handle FormData (multipart/form-data) for file uploads
+    if request.content_type.startswith('multipart/form-data'):
+        data = request.POST
+        image = request.FILES.get('image')
+    else:
+        # Handle JSON data
+        try:
+            data = json.loads(request.body)
+        except (json.JSONDecodeError, ValueError):
+            return JsonResponse({'success': False, 'error': 'Invalid data'}, status=400)
+        image = None
+    
+    required = ['category', 'title', 'description', 'location', 'phone_number']
+    for field in required:
+        if not data.get(field):
+            return JsonResponse({'success': False, 'error': f'Missing {field}'}, status=400)
+    
+    # Parse date_time if provided
+    date_time = data.get('date_time')
+    if date_time:
+        from datetime import datetime
+        try:
+            date_time = datetime.fromisoformat(date_time)
+            # Make timezone-aware
+            if timezone.is_naive(date_time):
+                date_time = timezone.make_aware(date_time)
+        except ValueError:
+            date_time = None
+    
+    report = LostFoundReport.objects.create(
+        category=data['category'],
+        title=data['title'],
+        description=data['description'],
+        location=data['location'],
+        phone_number=data['phone_number'],
+        urgency=data.get('urgency', 'medium'),
+        date_time=date_time,
+        reporter_name=data.get('reporter_name', ''),
+        reporter_email=data.get('reporter_email', ''),
+        latitude=data.get('latitude'),
+        longitude=data.get('longitude'),
+        # Person-specific
+        age=data.get('age'),
+        gender=data.get('gender'),
+        # Item-specific
+        item_type=data.get('item_type'),
+        image=image,
+    )
+    
+    return JsonResponse({
+        'success': True,
+        'report_id': str(report.id),
+        'report': _lost_found_to_dict(report),
+        'message': 'Report submitted successfully',
+    })
+
+
+@require_GET
+def api_lost_found_list(request):
+    """Get list of lost/found reports with optional filters."""
+    reports = LostFoundReport.objects.all()
+    
+    # Filters
+    category = request.GET.get('category')
+    status = request.GET.get('status')
+    search = request.GET.get('search')
+    
+    if category:
+        reports = reports.filter(category=category)
+    if status:
+        reports = reports.filter(status=status)
+    if search:
+        reports = reports.filter(title__icontains=search) | reports.filter(description__icontains=search)
+    
+    reports = reports.order_by('-created_at')[:50]
+    
+    return JsonResponse({
+        'reports': [_lost_found_to_dict(r) for r in reports],
+        'total': reports.count(),
+    })
+
+
+@require_POST
+@csrf_exempt
+def api_update_lost_found_status(request, report_id):
+    """Update status of a lost/found report."""
+    try:
+        data = json.loads(request.body)
+    except (json.JSONDecodeError, ValueError):
+        return JsonResponse({'success': False, 'error': 'Invalid data'}, status=400)
+    
+    report = get_object_or_404(LostFoundReport, id=report_id)
+    new_status = data.get('status')
+    
+    valid_statuses = [s[0] for s in LostFoundReport.STATUS_CHOICES]
+    if new_status not in valid_statuses:
+        return JsonResponse({'success': False, 'error': 'Invalid status'}, status=400)
+    
+    report.status = new_status
+    if new_status in ('found', 'claimed', 'resolved'):
+        report.resolved_at = timezone.now()
+    report.save()
+    
+    return JsonResponse({
+        'success': True,
+        'report': _lost_found_to_dict(report),
+        'message': f'Status updated to {report.get_status_display()}',
+    })
