@@ -1,13 +1,20 @@
 # ParkEase - Camp Management System
 
-A comprehensive Django-based camp management system featuring parking management, emergency response, lost & found tracking, and security monitoring. Built with modern UI/UX principles and fully responsive design.
+A comprehensive Django-based camp management system featuring AI-powered parking detection, emergency response, lost & found tracking, and security monitoring. Built with modern UI/UX principles and fully responsive design.
 
 ## 🌟 Features
 
+### AI-Powered Parking Detection
+- **YOLO Vehicle Detection**: Uses YOLOv8 computer vision to detect vehicles in real-time
+- **Automatic Occupancy Tracking**: Parking slot occupancy updated by AI detection every 5 minutes
+- **Video Feed Processing**: Processes CCTV-style video feeds to count vehicles
+- **Smart Distribution**: Automatically distributes detected vehicles across parking slots
+- **Detection Confidence**: Tracks confidence scores for AI detections
+- **Live Dashboard**: Real-time display of AI-detected vehicle counts
+
 ### Parking Management
 - **Zone-based Parking**: Organized parking zones with real-time occupancy tracking
-- **Slot Management**: Individual parking slots with status tracking (Available, Occupied, Reserved, Blocked)
-- **Check-in/Check-out System**: Session-based parking with automatic timeout (24 hours default)
+- **Slot Management**: Individual parking slots with status tracking (Available, Occupied, Blocked)
 - **GPS Integration**: Zone locations with latitude/longitude coordinates
 - **Manual Override**: Security staff can manually override zone status
 - **Real-time Dashboard**: Live view of parking availability and occupancy rates
@@ -64,26 +71,26 @@ A comprehensive Django-based camp management system featuring parking management
    source venv/bin/activate
    ```
 
-3. **Install Django**
+3. **Install dependencies**
    ```bash
-   pip install django==5.0
+   pip install -r requirements.txt
    ```
+   This installs Django, Pillow, OpenCV, and YOLOv8.
 
-4. **Install Pillow** (for image upload support)
+4. **Run database migrations**
    ```bash
-   pip install Pillow
-   ```
-
-5. **Run database migrations**
-   ```bash
+   python manage.py makemigrations
    python manage.py migrate
    ```
 
-6. **Create a superuser** (for admin access)
+5. **Create a superuser** (for admin access)
    ```bash
    python manage.py createsuperuser
    ```
    Follow the prompts to create username, email, and password.
+
+6. **Place your traffic video file**
+   For the hackathon, place your traffic video file as `traffic_video.mp4` in the project root directory.
 
 7. **Run the development server**
    ```bash
@@ -149,8 +156,10 @@ ParkEase/
 
 ### Parking Management
 - **ParkingZone**: Parking zones with capacity, status, and GPS coordinates
-- **ParkingSlot**: Individual parking slots with status and session tracking
-- **CheckInSession**: Parking session records with tokens and timestamps
+- **ParkingSlot**: Individual parking slots with AI detection fields
+  - `detected_vehicles`: Number of vehicles detected by YOLO
+  - `last_detection_at`: Timestamp of last detection run
+  - `confidence_score`: Average confidence score of detection
 
 ### Emergency Response
 - **EmergencyReport**: Emergency reports with type, severity, status, and location
@@ -248,11 +257,33 @@ Create initial parking zones with slots:
 python manage.py seed_parking_zones
 ```
 
-### Release Expired Slots
-Manually release expired parking sessions:
+### Run YOLO Vehicle Detection
+Run AI-powered vehicle detection to update parking slot occupancy:
 ```bash
-python manage.py release_expired_slots
+python manage.py run_yolo_detection
 ```
+
+Options:
+- `--video-path`: Path to video file (default: traffic_video.mp4)
+- `--zone-id`: Specific zone ID to update (default: all zones)
+- `--model-path`: Path to YOLO model file (default: yolov8n.pt)
+- `--sample-frames`: Number of frames to sample from video (default: 10)
+
+Example:
+```bash
+python manage.py run_yolo_detection --video-path my_video.mp4 --zone-id 1
+```
+
+### Periodic Detection (Every 5 Minutes)
+For production, set up a cron job or task scheduler to run detection every 5 minutes:
+
+**Linux (cron):**
+```bash
+*/5 * * * * cd /path/to/ParkEase && /path/to/python manage.py run_yolo_detection
+```
+
+**Windows (Task Scheduler):**
+Create a scheduled task to run the command every 5 minutes.
 
 ## 📊 Admin Panel
 
@@ -329,6 +360,10 @@ python manage.py runserver 8080
 - **Icons**: Font Awesome 6.5.0
 - **Fonts**: Google Fonts (DM Sans, Space Grotesk, DM Mono)
 - **Image Processing**: Pillow
+- **AI/Computer Vision**: 
+  - YOLOv8 (Ultralytics) for vehicle detection
+  - OpenCV for video processing
+  - NumPy for array operations
 
 ## 🤝 Contributing
 
@@ -364,6 +399,44 @@ Potential features for future versions:
 - Payment integration for parking fees
 - License plate recognition
 - IoT sensor integration
+- **Live CCTV camera integration** for real-time YOLO detection
+- **Multi-zone video processing** for simultaneous detection across all parking areas
+- **Crowd density detection** using YOLO for emergency response optimization
+- **Traffic flow analysis** for smart traffic management
+
+## 🤖 AI Detection System Details
+
+### How YOLO Detection Works
+
+1. **Video Processing**: The system processes video frames from CCTV cameras or pre-recorded video files
+2. **Vehicle Detection**: YOLOv8 model identifies vehicles (cars, motorcycles, buses, trucks) in each frame
+3. **Counting**: Vehicles are counted across multiple frames to get an accurate average
+4. **Database Update**: Detected counts are distributed across parking slots in the zone
+5. **Status Update**: Slot status is automatically updated based on detected vehicles
+
+### Detection Classes
+
+The YOLO model detects the following vehicle types (COCO dataset):
+- **Car** (class ID: 2)
+- **Motorcycle** (class ID: 3)
+- **Bus** (class ID: 5)
+- **Truck** (class ID: 7)
+
+### Configuration
+
+Edit `App/yolo_detection.py` to configure:
+- `VIDEO_PATH`: Path to your video file
+- `ZONE_ID`: Default zone ID to update
+- `MODEL_PATH`: YOLO model file path (yolov8n.pt for speed, yolov8x.pt for accuracy)
+- `SAMPLE_FRAMES`: Number of frames to sample from video
+
+### For Production CCTV Integration
+
+To integrate with live CCTV cameras:
+1. Replace video file processing with RTSP stream processing
+2. Use OpenCV's VideoCapture with RTSP URL: `cv2.VideoCapture('rtsp://camera_ip:port/stream')`
+3. Implement frame buffering for smoother detection
+4. Add error handling for camera disconnections
 
 ---
 

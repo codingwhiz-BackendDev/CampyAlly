@@ -9,12 +9,6 @@ urlpatterns = [
     # /parking/zone/1/
     path('zone/<int:zone_id>/', views.zone_detail, name='zone_detail'),
 
-    # /parking/checkin/5/   (POST only)
-    path('checkin/<int:slot_id>/', views.checkin, name='checkin'),
-
-    # /parking/checkout/    (POST only)
-    path('checkout/', views.checkout, name='checkout'),
-
     # /parking/api/status/
     path('api/status/', views.api_status, name='api_status'),
 
@@ -68,9 +62,6 @@ security_urlpatterns = [
 
     # /security/api/slots/1
     path('api/slots/<int:slot_id>/', views.api_slot_detail, name='api_slot_detail'),
-
-    # /security/api/slots/1/checkout
-    path('api/slots/<int:slot_id>/checkout/', views.api_slot_checkout, name='api_slot_checkout'),
 
     # /security/api/sessions
     path('api/sessions/', views.api_sessions, name='api_sessions'),

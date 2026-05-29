@@ -41,13 +41,13 @@ async function pollZoneStatus() {
             if (!slotCard) return;
 
             // Update card status class
-            slotCard.className = `slot-card status-${slot.status} ${slot.is_mine ? 'is-mine' : ''}`;
+            slotCard.className = `slot-card status-${slot.status}`;
 
             // Update slot status badge
             const statusBadge = slotCard.querySelector('.slot-status');
             if (statusBadge) {
-                statusBadge.className = `slot-status status-${slot.status}`;
-                statusBadge.textContent = slot.is_mine ? 'Your Slot' : slot.status.charAt(0).toUpperCase() + slot.status.slice(1);
+                statusBadge.className = `slot-status ${slot.status}`;
+                statusBadge.textContent = slot.status.charAt(0).toUpperCase() + slot.status.slice(1);
             }
 
             // Update slot icon
@@ -55,8 +55,6 @@ async function pollZoneStatus() {
             if (slotIcon) {
                 if (slot.status === 'occupied') {
                     slotIcon.className = 'fa-solid fa-car';
-                } else if (slot.status === 'reserved') {
-                    slotIcon.className = 'fa-solid fa-bookmark';
                 } else if (slot.status === 'blocked') {
                     slotIcon.className = 'fa-solid fa-ban';
                 } else {
@@ -64,34 +62,18 @@ async function pollZoneStatus() {
                 }
             }
 
-            // If slot becomes available and user doesn't have active slot, reload to show check-in form
-            if (slot.status === 'available' && !slot.is_mine) {
-                const checkinForm = slotCard.querySelector('.checkin-form');
-                if (!checkinForm) {
-                    // Reload page to show the check-in form
-                    location.reload();
-                    return;
-                }
+            // Update detected vehicles count
+            const slotLabel = slotCard.querySelector('.slot-label');
+            if (slotLabel) {
+                slotLabel.textContent = `Detected: ${slot.detected_vehicles} vehicle${slot.detected_vehicles !== 1 ? 's' : ''}`;
             }
 
-            // If slot becomes occupied and it's the user's slot, reload to show checkout
-            if (slot.is_mine && slot.status === 'occupied') {
-                const checkinForm = slotCard.querySelector('.checkin-form');
-                if (checkinForm) {
-                    location.reload();
-                    return;
-                }
+            // Update last scan time
+            const slotMeta = slotCard.querySelector('.slot-meta');
+            if (slotMeta && slot.last_detection_at) {
+                slotMeta.textContent = `Last scan: ${timeSince(slot.last_detection_at)}`;
             }
         });
-
-        // Show/hide active banner
-        if (data.slots.some(s => s.is_mine)) {
-            const bannerEl = document.getElementById('active-banner');
-            if (!bannerEl) {
-                location.reload();
-                return;
-            }
-        }
 
         // Update poll status
         const pollStatusEl = document.getElementById('poll-status');
