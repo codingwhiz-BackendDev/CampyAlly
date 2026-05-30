@@ -27,28 +27,28 @@ ZONES = [
     {
         'name': 'Zone A',
         'description': 'Main Gate Parking',
-        'capacity': 20,
+        'capacity': 100,
         'latitude': 6.7921,
         'longitude': 3.4478,
     },
     {
         'name': 'Zone B',
         'description': 'Auditorium Overflow Parking',
-        'capacity': 20,
+        'capacity': 100,
         'latitude': 6.7935,
         'longitude': 3.4501,
     },
     {
         'name': 'Zone C',
         'description': 'Camp Office Parking',
-        'capacity': 30,
+        'capacity': 100,
         'latitude': 6.7904,
         'longitude': 3.4526,
     },
     {
         'name': 'Zone D',
         'description': 'VIP & Accessibility Parking',
-        'capacity': 10,
+        'capacity': 100,
         'latitude': 6.7948,
         'longitude': 3.4489,
     },
@@ -82,9 +82,12 @@ class Command(BaseCommand):
                 zone.save()
                 self.stdout.write(f'  ↺ Updated zone: {zone.name}')
 
-            # Create slots only if zone has none
-            if zone.slots.count() == 0:
-                prefix = zone.name.split()[-1]  # 'A', 'B', 'C', 'D'
+            # Create or add slots up to capacity
+            current_slot_count = zone.slots.count()
+            prefix = zone.name.split()[-1]  # 'A', 'B', 'C', 'D'
+
+            if current_slot_count == 0:
+                # Create all slots from scratch
                 for i in range(1, zone_data['capacity'] + 1):
                     ParkingSlot.objects.create(
                         zone=zone,
@@ -96,9 +99,23 @@ class Command(BaseCommand):
                         f'    → Created {zone_data["capacity"]} slots'
                     )
                 )
+            elif current_slot_count < zone_data['capacity']:
+                # Add more slots to reach capacity
+                slots_to_add = zone_data['capacity'] - current_slot_count
+                for i in range(current_slot_count + 1, zone_data['capacity'] + 1):
+                    ParkingSlot.objects.create(
+                        zone=zone,
+                        slot_number=f'{prefix}-{i:02d}',
+                        status='available',
+                    )
+                self.stdout.write(
+                    self.style.SUCCESS(
+                        f'    → Added {slots_to_add} slots (total: {zone_data["capacity"]})'
+                    )
+                )
             else:
                 self.stdout.write(
-                    f'    → {zone.slots.count()} slots already exist, skipped'
+                    f'    → {current_slot_count} slots already exist (capacity: {zone_data["capacity"]})'
                 )
 
         self.stdout.write(self.style.SUCCESS('\n✅ Seed complete!\n'))

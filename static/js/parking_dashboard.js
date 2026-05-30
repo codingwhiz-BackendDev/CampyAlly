@@ -56,6 +56,12 @@ async function pollDashboard() {
                     badge.textContent = zone.status.charAt(0).toUpperCase() + zone.status.slice(1);
                 }
             }
+
+            // Update detected vehicles display if it exists
+            const detectedEl = document.getElementById('zone-' + zone.id + '-detected');
+            if (detectedEl && zone.detected_vehicles !== undefined) {
+                detectedEl.textContent = zone.detected_vehicles + ' vehicles';
+            }
         });
 
         // Update poll indicator

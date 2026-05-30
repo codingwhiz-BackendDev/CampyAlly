@@ -85,100 +85,27 @@
                 </div>
             </div>
 
-            <!-- Active Parking Banner -->
-            {% if active_slot %}
-            <div class="active-parking-banner" id="active-banner">
-                <div class="banner-content">
-                    <div class="banner-icon">
-                        <i class="fa-solid fa-car"></i>
-                    </div>
-                    <div class="banner-info">
-                        <div class="banner-title">You're parked in Slot {{ active_slot.slot_number }}</div>
-                        <div class="banner-subtitle">{{ zone.name }} · Auto-releases in 24 hours</div>
-                    </div>
-                </div>
-                <form method="post" action="/parking/checkout/" class="checkout-form">
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn-secondary">
-                        <i class="fa-solid fa-right-from-bracket"></i> Check Out
-                    </button>
-                </form>
-            </div>
-            {% endif %}
-
             <!-- Slots Grid -->
             <div class="slots-grid" id="slots-grid">
                 {% for slot in slots %}
-                <div class="slot-card status-{{ slot.status }} {% if slot.session_token == request.session.parking_session_token %}is-mine{% endif %}" 
+                <div class="slot-card status-{{ slot.status }}" 
                      data-slot-id="{{ slot.id }}" 
                      data-slot-number="{{ slot.slot_number }}">
-                    {% if slot.status == 'available' and not active_slot %}
-                    <form method="post" action="/parking/checkin/{{ slot.id }}/" class="checkin-form">
-                        {% csrf_token %}
-                        <div class="slot-header">
-                            <div class="slot-number">{{ slot.slot_number }}</div>
-                            <div class="slot-status available">Available</div>
-                        </div>
-                        <div class="slot-body">
-                            <div class="slot-icon">
-                                <i class="fa-solid fa-square-parking"></i>
-                            </div>
-                            <div class="slot-info">
-                                <div class="slot-label">Tap to park</div>
-                            </div>
-                        </div>
-                        <div class="slot-footer">
-                            <input type="text" 
-                                   name="vehicle_plate" 
-                                   placeholder="Vehicle Plate (optional)" 
-                                   class="vehicle-input"
-                                   maxlength="20">
-                            <button type="submit" class="btn btn-primary btn-sm">
-                                <i class="fa-solid fa-check"></i> Check In
-                            </button>
-                        </div>
-                    </form>
-                    {% else %}
                     <div class="slot-header">
                         <div class="slot-number">{{ slot.slot_number }}</div>
-                        <div class="slot-status status-{{ slot.status }}">
-                            {% if slot.session_token == request.session.parking_session_token %}Your Slot{% else %}{{ slot.get_status_display }}{% endif %}
-                        </div>
+                        <div class="slot-status {{ slot.status }}">{{ slot.get_status_display }}</div>
                     </div>
                     <div class="slot-body">
                         <div class="slot-icon">
-                            {% if slot.status == 'occupied' %}
-                                <i class="fa-solid fa-car"></i>
-                            {% elif slot.status == 'reserved' %}
-                                <i class="fa-solid fa-bookmark"></i>
-                            {% elif slot.status == 'blocked' %}
-                                <i class="fa-solid fa-ban"></i>
-                            {% else %}
-                                <i class="fa-solid fa-square-parking"></i>
-                            {% endif %}
+                            <i class="fa-solid fa-square-parking"></i>
                         </div>
                         <div class="slot-info">
-                            {% if slot.vehicle_plate %}
-                                <div class="slot-plate">{{ slot.vehicle_plate }}</div>
-                            {% endif %}
-                            {% if slot.occupied_at %}
-                                <div class="slot-time">
-                                    Since {{ slot.occupied_at|date:"H:i" }}
-                                </div>
+                            <div class="slot-label">Detected: {{ slot.detected_vehicles }} vehicle{{ slot.detected_vehicles|pluralize }}</div>
+                            {% if slot.last_detection_at %}
+                            <div class="slot-meta">Last scan: {{ slot.last_detection_at|timesince }} ago</div>
                             {% endif %}
                         </div>
                     </div>
-                    {% if slot.session_token == request.session.parking_session_token %}
-                    <div class="slot-footer">
-                        <form method="post" action="/parking/checkout/" class="checkout-inline">
-                            {% csrf_token %}
-                            <button type="submit" class="btn btn-secondary btn-sm">
-                                <i class="fa-solid fa-right-from-bracket"></i> Check Out
-                            </button>
-                        </form>
-                    </div>
-                    {% endif %}
-                    {% endif %}
                 </div>
                 {% empty %}
                 <div class="empty-state">

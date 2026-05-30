@@ -1,5 +1,4 @@
 from django.db import models
-from django.contrib.auth.models import User
 from django.utils import timezone
 import uuid
 
@@ -34,6 +33,10 @@ class ParkingZone(models.Model):
     def available_count(self):
         return self.slots.filter(status='available').count()
 
+    def detected_vehicles_count(self):
+        """Total vehicles detected by YOLO across all slots in this zone"""
+        return sum(slot.detected_vehicles for slot in self.slots.all())
+
     def occupancy_percent(self):
         total = self.slots.count()
         if total == 0:
@@ -66,37 +69,31 @@ class ParkingSlot(models.Model):
     STATUS_CHOICES = [
         ('available', 'Available'),
         ('occupied',  'Occupied'),
-        ('reserved',  'Reserved'),
         ('blocked',   'Blocked'),
     ]
 
     zone            = models.ForeignKey(ParkingZone, on_delete=models.CASCADE, related_name='slots')
     slot_number     = models.CharField(max_length=10)
     status          = models.CharField(max_length=10, choices=STATUS_CHOICES, default='available')
-    occupied_by     = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
-    occupied_at     = models.DateTimeField(null=True, blank=True)
-    auto_release_at = models.DateTimeField(null=True, blank=True)
-    session_token   = models.CharField(max_length=64, blank=True, null=True)
-    vehicle_plate   = models.CharField(max_length=20, blank=True, null=True)
+    
+    # YOLO Detection fields
+    detected_vehicles = models.PositiveIntegerField(default=0, help_text="Number of vehicles detected by YOLO")
+    last_detection_at = models.DateTimeField(null=True, blank=True, help_text="Last time YOLO detection ran")
+    confidence_score = models.FloatField(null=True, blank=True, help_text="Average confidence score of detection")
+    
     updated_at      = models.DateTimeField(auto_now=True)
 
-    def check_in(self, user=None, session_token=None, vehicle_plate=None, hours=24):
-        self.status          = 'occupied'
-        self.occupied_by     = user
-        self.session_token   = session_token
-        self.vehicle_plate   = vehicle_plate
-        self.occupied_at     = timezone.now()
-        self.auto_release_at = timezone.now() + timezone.timedelta(hours=hours)
-        self.save()
-        self.zone.save()
-
-    def check_out(self):
-        self.status          = 'available'
-        self.occupied_by     = None
-        self.session_token   = None
-        self.vehicle_plate   = None
-        self.occupied_at     = None
-        self.auto_release_at = None
+    def update_detection(self, vehicle_count, confidence=None):
+        """Update slot with YOLO detection results"""
+        self.detected_vehicles = vehicle_count
+        self.last_detection_at = timezone.now()
+        if confidence is not None:
+            self.confidence_score = confidence
+        # Update status based on detection
+        if vehicle_count > 0:
+            self.status = 'occupied'
+        else:
+            self.status = 'available'
         self.save()
         self.zone.save()
 
@@ -108,20 +105,6 @@ class ParkingSlot(models.Model):
         unique_together = ['zone', 'slot_number']
 
 
-class CheckInSession(models.Model):
-    token          = models.CharField(max_length=64, unique=True, default=uuid.uuid4)
-    slot           = models.ForeignKey(ParkingSlot, on_delete=models.CASCADE, related_name='sessions')
-    vehicle_plate  = models.CharField(max_length=20, blank=True)
-    checked_in_at  = models.DateTimeField(auto_now_add=True)
-    checked_out_at = models.DateTimeField(null=True, blank=True)
-    is_active      = models.BooleanField(default=True)
-
-    def __str__(self):
-        return f"Session {str(self.token)[:8]}… → {self.slot}"
-    
-    
-    
-    
     
 class EmergencyReport(models.Model):
  
