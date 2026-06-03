@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Security Control Panel — CampEase</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -19,7 +19,7 @@
             <i class="fa-solid fa-shield-halved"></i>
         </div>
         <div class="logo-text">
-            <span class="logo-main">CampEase</span>
+            <span class="logo-main">CampAlly</span>
             <span class="logo-sub">Security Panel</span>
         </div>
     </div>
@@ -55,6 +55,9 @@
         </div>
     </div>
 </aside>
+
+<!-- SIDEBAR OVERLAY -->
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
 
 <!-- MAIN -->
 <main class="main-content" id="mainContent">
@@ -336,11 +339,18 @@ document.querySelectorAll('.nav-item').forEach(item => {
 
         // close sidebar on mobile
         document.getElementById('sidebar').classList.remove('open');
+        document.getElementById('sidebarOverlay').classList.remove('active');
     });
 });
 
 document.getElementById('sidebarToggle').addEventListener('click', () => {
     document.getElementById('sidebar').classList.toggle('open');
+    document.getElementById('sidebarOverlay').classList.toggle('active');
+});
+
+document.getElementById('sidebarOverlay').addEventListener('click', () => {
+    document.getElementById('sidebar').classList.remove('open');
+    document.getElementById('sidebarOverlay').classList.remove('active');
 });
 
 // ──────────────────────────────────────────────────
