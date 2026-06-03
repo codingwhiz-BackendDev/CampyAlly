@@ -9,40 +9,7 @@ from django.db import transaction
 from django.db.models import Count
 from django.contrib import messages
 
-from .models import ParkingZone, ParkingSlot, CheckInSession, EmergencyReport,EmergencyTimeline, LostFoundReport
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-# Constants
-# ─────────────────────────────────────────────────────────────────────────────
-
-SESSION_KEY = 'parking_session_token'
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-# Internal helpers
-# ─────────────────────────────────────────────────────────────────────────────
-
-def _get_or_create_token(request):
-    if SESSION_KEY not in request.session:
-        request.session[SESSION_KEY] = uuid.uuid4().hex
-    return request.session[SESSION_KEY]
-
-
-def _get_active_slot(request):
-    token = request.session.get(SESSION_KEY)
-    if not token:
-        return None
-    return ParkingSlot.objects.filter(session_token=token, status='occupied').first()
-
-
-def _release_expired_slots():
-    expired = ParkingSlot.objects.filter(
-        status='occupied',
-        auto_release_at__lt=timezone.now()
-    )
-    for slot in expired:
-        slot.check_out()
+from .models import ParkingZone, ParkingSlot, EmergencyReport, EmergencyTimeline, LostFoundReport
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -58,9 +25,7 @@ def index(request):
 # ─────────────────────────────────────────────────────────────────────────────
 
 def parking_dashboard(request):
-    _release_expired_slots()
-    zones       = ParkingZone.objects.prefetch_related('slots').all()
-    active_slot = _get_active_slot(request)
+    zones = ParkingZone.objects.prefetch_related('slots').all()
 
     # Build a JSON-safe list of zone coordinates for the geofence JS.
     # Only include zones that have real coordinates set (not the 0.0 placeholder).
@@ -73,6 +38,7 @@ def parking_dashboard(request):
             'url':       f'/parking/zone/{z.id}/',
             'available': z.available_count(),
             'status':    z.status,
+            'detected_vehicles': z.detected_vehicles_count(),
             # Flag so JS can skip zones whose coords haven't been set yet
             'has_coords': not (z.latitude == 0.0 and z.longitude == 0.0),
         }
@@ -81,7 +47,6 @@ def parking_dashboard(request):
 
     return render(request, 'parking_dashboard.html', {
         'zones':      zones,
-        'active_slot': active_slot,
         'zones_geo':  zones_geo,   # passed into template as a JS variable
     })
 
@@ -91,86 +56,13 @@ def parking_dashboard(request):
 # ─────────────────────────────────────────────────────────────────────────────
 
 def zone_detail(request, zone_id):
-    _release_expired_slots()
-    zone        = get_object_or_404(ParkingZone, id=zone_id)
-    slots       = zone.slots.all().order_by('slot_number')
-    active_slot = _get_active_slot(request)
+    zone  = get_object_or_404(ParkingZone, id=zone_id)
+    slots = zone.slots.all().order_by('slot_number')
 
     return render(request, 'zone_detail.html', {
         'zone':        zone,
         'slots':       slots,
-        'active_slot': active_slot,
     })
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-# Check-in  POST /parking/checkin/<slot_id>/
-# ─────────────────────────────────────────────────────────────────────────────
-
-@require_POST
-def checkin(request, slot_id):
-    token    = _get_or_create_token(request)
-    existing = _get_active_slot(request)
-
-    if existing:
-        messages.warning(
-            request,
-            f"You're already checked in to Slot {existing.slot_number} "
-            f"in {existing.zone.name}. Check out first."
-        )
-        return redirect('zone_detail', zone_id=existing.zone.id)
-
-    vehicle_plate = request.POST.get('vehicle_plate', '').strip().upper()
-
-    with transaction.atomic():
-        try:
-            slot = ParkingSlot.objects.select_for_update().get(id=slot_id)
-        except ParkingSlot.DoesNotExist:
-            messages.error(request, "Slot not found.")
-            return redirect('parking_dashboard')
-
-        if slot.status != 'available':
-            messages.error(request, "Sorry, that slot was just taken. Please choose another.")
-            return redirect('zone_detail', zone_id=slot.zone.id)
-
-        slot.check_in(session_token=token, vehicle_plate=vehicle_plate, hours=24)
-        CheckInSession.objects.create(token=token, slot=slot, vehicle_plate=vehicle_plate)
-
-    messages.success(
-        request,
-        f"✅ Checked in to Slot {slot.slot_number} in {slot.zone.name}. Auto-releases in 24 hours."
-    )
-    return redirect('zone_detail', zone_id=slot.zone.id)
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-# Check-out  POST /parking/checkout/
-# ─────────────────────────────────────────────────────────────────────────────
-
-@require_POST
-def checkout(request):
-    token = request.session.get(SESSION_KEY)
-    if not token:
-        messages.error(request, "No active parking session found.")
-        return redirect('parking_dashboard')
-
-    slot = ParkingSlot.objects.filter(session_token=token, status='occupied').first()
-    if not slot:
-        messages.error(request, "No active parking session found.")
-        return redirect('parking_dashboard')
-
-    zone_id     = slot.zone.id
-    slot_number = slot.slot_number
-    zone_name   = slot.zone.name
-
-    slot.check_out()
-    CheckInSession.objects.filter(token=token, is_active=True).update(
-        is_active=False,
-        checked_out_at=timezone.now()
-    )
-
-    messages.success(request, f"✅ Checked out from Slot {slot_number} in {zone_name}. Safe travels!")
-    return redirect('zone_detail', zone_id=zone_id)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -179,13 +71,10 @@ def checkout(request):
 
 @require_GET
 def api_status(request):
-    _release_expired_slots()
     zones = ParkingZone.objects.prefetch_related('slots').all()
-    token = request.session.get(SESSION_KEY)
 
     data = {
         'zones':       [],
-        'active_slot': None,
         'timestamp':   timezone.now().isoformat(),
     }
 
@@ -200,27 +89,18 @@ def api_status(request):
             'percent':   zone.occupancy_percent(),
             'lat':       zone.latitude,
             'lng':       zone.longitude,
+            'detected_vehicles': zone.detected_vehicles_count(),
             'slots': [
                 {
                     'id':      s.id,
                     'number':  s.slot_number,
                     'status':  s.status,
-                    'is_mine': s.session_token == token if token else False,
+                    'detected_vehicles': s.detected_vehicles,
+                    'last_detection_at': s.last_detection_at.isoformat() if s.last_detection_at else None,
                 }
                 for s in zone.slots.all()
             ],
         })
-
-    if token:
-        active = ParkingSlot.objects.filter(session_token=token, status='occupied').first()
-        if active:
-            data['active_slot'] = {
-                'id':              active.id,
-                'number':          active.slot_number,
-                'zone':            active.zone.name,
-                'zone_id':         active.zone.id,
-                'auto_release_at': active.auto_release_at.isoformat() if active.auto_release_at else None,
-            }
 
     return JsonResponse(data)
 
@@ -231,9 +111,7 @@ def api_status(request):
 
 @require_GET
 def api_zone_status(request, zone_id):
-    _release_expired_slots()
-    zone  = get_object_or_404(ParkingZone, id=zone_id)
-    token = request.session.get(SESSION_KEY)
+    zone = get_object_or_404(ParkingZone, id=zone_id)
 
     return JsonResponse({
         'id':        zone.id,
@@ -243,13 +121,15 @@ def api_zone_status(request, zone_id):
         'available': zone.available_count(),
         'total':     zone.slots.count(),
         'percent':   zone.occupancy_percent(),
+        'detected_vehicles': zone.detected_vehicles_count(),
         'timestamp': timezone.now().isoformat(),
         'slots': [
             {
                 'id':      s.id,
                 'number':  s.slot_number,
                 'status':  s.status,
-                'is_mine': s.session_token == token if token else False,
+                'detected_vehicles': s.detected_vehicles,
+                'last_detection_at': s.last_detection_at.isoformat() if s.last_detection_at else None,
             }
             for s in zone.slots.all()
         ],

@@ -1,404 +1,646 @@
 {% load static %}
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CampEase — Next-Gen Civic Operations</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link
-        href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@600;700&family=DM+Mono:wght@400;500&display=swap"
-        rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-    <link rel="stylesheet" href="{% static 'css/index.css' %}">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CampEase — Redemption City Smart Operations</title>
+  <meta name="description" content="Smart crowd, traffic, parking, emergency & lost person recovery system for Redemption City.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,600;9..144,700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="{% static 'css/index.css' %}">
 </head>
-
 <body>
-    <!-- ANIMATED BACKGROUND ELEMENTS -->
-    <div class="bg-orbs">
-        <div class="orb orb-1"></div>
-        <div class="orb orb-2"></div>
-        <div class="orb orb-3"></div>
+
+<!-- ═══════════════════════════════════ NAV ═══════════════════════════════════ -->
+<nav class="site-nav hero-nav" id="siteNav">
+  <div class="container">
+    <div class="nav-inner">
+      <a href="#" class="nav-logo">
+        <div class="nav-logo-mark"><i class="fa-solid fa-city"></i></div>
+        CampAlly
+      </a>
+      <div class="nav-links" id="navLinks">
+        <a href="#service-selection" class="nav-link">Services</a>
+        <a href="#metrics"           class="nav-link">Live Feed</a>
+        <a href="#features"          class="nav-link">Features</a>
+        <a href="#city-map"          class="nav-link">City Map</a>
+        <a href="#how-it-works"      class="nav-link">How It Works</a>
+        <a href="#command-center"    class="nav-link">Command Center</a>
+      </div>
+      <div class="nav-actions">
+        <a href="/emergency" class="btn btn-danger" style="font-size:.8rem;padding:8px 16px;">
+          <i class="fa-solid fa-triangle-exclamation"></i> SOS
+        </a>
+        <button class="hamburger" id="hamburgerBtn" aria-label="Menu" aria-expanded="false">
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- ═══════════════════════════════════ HERO ═══════════════════════════════════ -->
+<section id="hero">
+
+  <!-- Full-screen video background -->
+  <div class="hero-video-wrap">
+  
+    <video
+      id="heroVideo"
+      src="{% static 'video/background_video.mp4' %}"
+      autoplay muted loop playsinline
+      preload="auto"
+    ></video>
+  </div>
+
+  <!-- Grid overlay -->
+  <div class="hero-grid-overlay"></div>
+  <!-- Scanning line -->
+  <div class="hero-scan"></div>
+
+  <!-- Main content -->
+  <div class="hero-content">
+    <div class="container">
+
+      <div class="hero-badge">
+        <span class="live-dot"></span>
+        Live &nbsp;·&nbsp; Redemption City Operations Centre &nbsp;·&nbsp; 6.4531°N 3.3958°E
+      </div>
+
+      <h1 class="hero-headline">
+        Redemption City's<br>
+        <span class="accent">smart command centre</span><br>
+        for safer, smoother gatherings.
+      </h1>
+
+      <!-- Cycling sub-phrases -->
+      <div class="hero-phrase-wrap" id="heroPhraseWrap"></div>
+
+      <div class="hero-btns">
+        <a href="#service-selection" class="btn btn-white btn-lg">
+          <i class="fa-solid fa-grid-2"></i> Select a Service
+        </a>
+        <a href="#city-map" class="btn btn-ghost-white btn-lg">
+          <i class="fa-solid fa-map-location-dot"></i> View Live Map
+        </a>
+        <!-- Mute toggle for video -->
+        <button id="muteBtn" class="btn btn-ghost-white" title="Toggle audio" style="padding:12px 14px;">
+          <i class="fa-solid fa-volume-xmark"></i>
+        </button>
+      </div>
+
+    </div>
+  </div>
+ 
+</section>
+
+<!-- ═══════════════════════════════════ SERVICES ═══════════════════════════════════ -->
+<section id="service-selection">
+  <div class="container">
+
+    <div class="sel-header reveal">
+      <div class="tag"><i class="fa-solid fa-hand-pointer"></i> Select Your Service</div>
+      <h2>How can we help you today?</h2>
+      <p>Choose a service to get started. All services operate in real time across Redemption City.</p>
     </div>
 
-    <!-- NAV -->
-    <nav class="site-nav">
-        <div class="container">
-            <div class="nav-inner">
-                <a href="#" class="nav-logo">
-                    <div class="nav-logo-mark">
-                        <div class="logo-glow"></div>
-                        <i class="fa-solid fa-rocket"></i>
-                    </div>
-                    <div class="logo-text">
-                        <span class="logo-main">CampEase</span>
-                        <span class="logo-badge">v2.0</span>
-                    </div>
-                </a>
-                <div class="nav-links-wrap">
-                    <a href="#hero" class="nav-link active">Home</a>
-                    <a href="#metrics" class="nav-link">Metrics</a>
-                    <a href="#features" class="nav-link">Features</a>
-                    <a href="#city-map" class="nav-link">Live Map</a>
-                    <a href="#how-it-works" class="nav-link">How It Works</a>
-                </div>
-                <div class="nav-actions">
-                    <button class="btn btn-primary"><i class="fa-solid fa-sparkles"></i> Get Started</button>
-                    <button class="hamburger" id="hamburgerBtn"
-                        aria-label="Toggle menu"><span></span><span></span><span></span></button>
-                </div>
-            </div>
+    <div class="sel-cards">
+      <a href="/parking" class="sel-card parking reveal d1">
+        <div class="sel-icon"><i class="fa-solid fa-square-parking"></i></div>
+        <h3>Smart Parking</h3>
+        <p>Find, navigate to, and reserve parking in real time across all 12 zones of the campus.</p>
+        <span class="sel-arrow"><i class="fa-solid fa-arrow-right"></i> Find Parking</span>
+      </a>
+
+      <a href="/emergency" class="sel-card emergency reveal d2">
+        <div class="sel-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+        <h3>Emergency Response</h3>
+        <p>Report an incident or medical emergency. Responders dispatched in under 90 seconds.</p>
+        <span class="sel-arrow"><i class="fa-solid fa-arrow-right"></i> Report Now</span>
+      </a>
+
+      <a href="/lost-person" class="sel-card lost reveal d3">
+        <div class="sel-icon"><i class="fa-solid fa-person-circle-question"></i></div>
+        <h3>Lost Person Recovery</h3>
+        <p>Report or search for a missing person. Powered by RFID wristbands and crowd-data.</p>
+        <span class="sel-arrow"><i class="fa-solid fa-arrow-right"></i> Start Search</span>
+      </a>
+    </div>
+
+    <div class="sel-note reveal">
+      <i class="fa-solid fa-circle-info"></i>
+      <span>Select one of the services above to proceed. All reports are routed directly to the CampEase command centre.</span>
+    </div>
+
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════ LIVE METRICS ═══════════════════════════════════ -->
+<section id="metrics">
+  <div class="metrics-bar">
+    <div class="mbar-card reveal d1">
+      <div class="mc-icon g"><i class="fa-solid fa-square-parking"></i></div>
+      <div class="mc-label">Parking</div>
+      <div class="mc-value">847</div>
+      <div class="mc-sub">Available slots</div>
+      <div class="mc-bar"><div class="mc-bar-fill g" data-width="68" style="transform:scaleX(0)"></div></div>
+      <span class="mc-status ok">Optimal</span>
+    </div>
+    <div class="mbar-card reveal d2">
+      <div class="mc-icon a"><i class="fa-solid fa-people-group"></i></div>
+      <div class="mc-label">Crowd Level</div>
+      <div class="mc-value">74%</div>
+      <div class="mc-sub">Arena West corridor</div>
+      <div class="mc-bar"><div class="mc-bar-fill a" data-width="74" style="transform:scaleX(0)"></div></div>
+      <span class="mc-status hi">High</span>
+    </div>
+    <div class="mbar-card reveal d3">
+      <div class="mc-icon b"><i class="fa-solid fa-road"></i></div>
+      <div class="mc-label">Traffic Index</div>
+      <div class="mc-value">62</div>
+      <div class="mc-sub">Gate 4 bottleneck</div>
+      <div class="mc-bar"><div class="mc-bar-fill b" data-width="62" style="transform:scaleX(0)"></div></div>
+      <span class="mc-status hi">Monitor</span>
+    </div>
+    <div class="mbar-card reveal d4">
+      <div class="mc-icon r"><i class="fa-solid fa-circle-exclamation"></i></div>
+      <div class="mc-label">Emergencies</div>
+      <div class="mc-value">3</div>
+      <div class="mc-sub">Active incidents</div>
+      <div class="mc-bar"><div class="mc-bar-fill r" data-width="12" style="transform:scaleX(0)"></div></div>
+      <span class="mc-status crit">Attention</span>
+    </div>
+    <div class="mbar-card reveal d5">
+      <div class="mc-icon b"><i class="fa-solid fa-person-circle-question"></i></div>
+      <div class="mc-label">Lost Persons</div>
+      <div class="mc-value">2</div>
+      <div class="mc-sub">Search active</div>
+      <div class="mc-bar"><div class="mc-bar-fill b" data-width="8" style="transform:scaleX(0)"></div></div>
+      <span class="mc-status hi">Active</span>
+    </div>
+    <div class="mbar-card reveal d6">
+      <div class="mc-icon g"><i class="fa-solid fa-network-wired"></i></div>
+      <div class="mc-label">System Health</div>
+      <div class="mc-value">99.9%</div>
+      <div class="mc-sub">All APIs nominal</div>
+      <div class="mc-bar"><div class="mc-bar-fill g" data-width="99" style="transform:scaleX(0)"></div></div>
+      <span class="mc-status ok">Excellent</span>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════ FEATURES ═══════════════════════════════════ -->
+<section id="features">
+  <div class="container">
+
+    <div class="feat-header reveal">
+      <div class="tag">Platform Capabilities</div>
+      <h2>Six pillars of city intelligence</h2>
+      <p>CampAlly integrates six mission-critical systems into one unified, real-time operations layer.</p>
+    </div>
+
+    <div class="feat-bento">
+      <!-- Row 1: 3 equal cards -->
+      <div class="feat-cell fc-1 reveal d1">
+        <div class="fc-icon g"><i class="fa-solid fa-square-parking"></i></div>
+        <h3>Smart Parking Detection</h3>
+        <p>IoT sensors across all 12 zones stream slot availability in real time. Visitors guided to the nearest open bay, cutting search time by up to 70%.</p>
+        <span class="feat-num">01</span>
+      </div>
+      <div class="feat-cell fc-2 reveal d2">
+        <div class="fc-icon a"><i class="fa-solid fa-people-arrows"></i></div>
+        <h3>Crowd Congestion Monitoring</h3>
+        <p>Computer-vision density analysis detects surge zones before they become dangerous, triggering proactive crowd-flow redirects.</p>
+        <span class="feat-num">02</span>
+      </div>
+      <div class="feat-cell fc-3 reveal d3">
+        <div class="fc-icon r"><i class="fa-solid fa-phone-volume"></i></div>
+        <h3>Emergency SOS Response</h3>
+        <p>Citizens trigger SOS from mobile or kiosks. Nearest responder auto-dispatched with GPS in under 90 seconds — every time.</p>
+        <span class="feat-num">03</span>
+      </div>
+
+      <!-- Row 2: two wider cells -->
+      <div class="feat-cell fc-4 reveal d1">
+        <div class="fc-icon g"><i class="fa-solid fa-person-circle-check"></i></div>
+        <h3>Lost Person Recovery</h3>
+        <p>Multi-channel recovery: RFID wristband triangulation, crowd-sourced sightings, and public broadcast alerts — optimised for children and elderly visitors.</p>
+        <span class="feat-num">04</span>
+      </div>
+      <div class="feat-cell fc-5 reveal d2">
+        <div class="fc-icon b"><i class="fa-solid fa-diamond-turn-right"></i></div>
+        <h3>Real-Time Route Guidance</h3>
+        <p>Dynamic routing engine recalculates optimal paths based on live congestion, closures, and event schedules — pushing updates to visitor devices instantly.</p>
+        <span class="feat-num">05</span>
+      </div>
+
+      <!-- Row 3: full-width feature highlight -->
+      <div class="feat-cell fc-6 reveal">
+        <div class="fc-icon g" style="width:60px;height:60px;font-size:1.4rem;flex-shrink:0">
+          <i class="fa-solid fa-tower-control"></i>
         </div>
-    </nav>
-
-    <!-- HERO SECTION -->
-    <section id="hero">
-        <div class="hero-background">
-            <div class="gradient-mesh"></div>
+        <div class="fc-body">
+          <h3>Unified Admin Command Dashboard</h3>
+          <p>One screen for city authorities: live incident feed, resource deployment, crowd analytics, parking occupancy, and inter-agency communication — all in real time.</p>
         </div>
-        <div class="container">
-            <div class="hero-layout">
-                <div class="hero-text">
-                    <div class="hero-badge">
-                        <span class="live-dot"></span>
-                        <span>LIVE — Powering Redemption City</span>
-                    </div>
-                    <h1 class="hero-title">
-                        Redemption City's <span class="gradient-text">smart command center</span>
-                        <br>for safer, smoother operations
-                    </h1>
-                    <p class="hero-desc">Your all-in-one dashboard for parking, emergencies, and lost person recovery
-                        across Redemption City. Built for residents, by residents.</p>
+        <span class="feat-num">06</span>
+      </div>
+    </div>
 
-                    <div class="hero-btns">
-                        <button class="btn btn-primary btn-lg btn-pulse">
-                            <i class="fa-solid fa-play"></i> Watch Demo
-                        </button>
-                        <button class="btn btn-secondary btn-lg">
-                            <i class="fa-solid fa-arrow-right"></i> Explore
-                        </button>
-                    </div>
+  </div>
+</section>
 
-                    <div class="stats-bar">
-                        <div class="stat-item">
-                            <div class="stat-value">99.9%</div>
-                            <div class="stat-label">Uptime</div>
-                        </div>
-                        <div class="stat-divider"></div>
-                        <div class="stat-item">
-                            <div class="stat-value">500K+</div>
-                            <div class="stat-label">Concurrent Users</div>
-                        </div>
-                        <div class="stat-divider"></div>
-                        <div class="stat-item">
-                            <div class="stat-value">6</div>
-                            <div class="stat-label">AI Modules</div>
-                        </div>
-                    </div>
-                </div>
+<!-- ═══════════════════════════════════ CITY MAP ═══════════════════════════════════ -->
+<section id="city-map">
+  <div class="container">
 
-                <div class="hero-visual">
-                    <div class="visual-card">
-                        <div class="card-header">
-                            <div class="card-dots">
-                                <span class="dot"></span>
-                                <span class="dot"></span>
-                                <span class="dot"></span>
-                            </div>
-                            <span class="card-title">Live Dashboard</span>
-                        </div>
-                        <div class="card-body">
-                            <div class="dashboard-preview">
-                                <div class="preview-grid">
-                                    <div class="preview-item">
-                                        <div class="preview-icon"><i class="fa-solid fa-chart-line"></i></div>
-                                        <div class="preview-stat">
-                                            <div class="preview-num">47,382</div>
-                                            <div class="preview-label">Active</div>
-                                        </div>
-                                    </div>
-                                    <div class="preview-item">
-                                        <div class="preview-icon"><i class="fa-solid fa-car"></i></div>
-                                        <div class="preview-stat">
-                                            <div class="preview-num">1,247</div>
-                                            <div class="preview-label">Parking</div>
-                                        </div>
-                                    </div>
-                                    <div class="preview-item">
-                                        <div class="preview-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
-                                        <div class="preview-stat">
-                                            <div class="preview-num">3</div>
-                                            <div class="preview-label">Issues</div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <canvas id="miniMap" style="width: 100%; height: 200px; margin-top: 16px;"></canvas>
-                            </div>
-                        </div>
-                        <div class="card-glow"></div>
-                    </div>
-                </div>
-            </div>
+    <div class="map-section-header reveal">
+      <div class="tag"><i class="fa-solid fa-location-dot"></i> Live City Intelligence</div>
+      <h2>Redemption City — Live Map</h2>
+      <p>Real positions, real roads, real incidents. Anchored to 6.4531°N, 3.3958°E — RCCG Redemption Camp, Lagos–Ibadan Expressway.</p>
+    </div>
+
+    <div class="map-layout">
+      <!-- Main map canvas -->
+      <div class="map-panel reveal">
+        <div class="map-toolbar">
+          <span class="map-toolbar-title">
+            <i class="fa-solid fa-map-location-dot"></i>
+            Redemption City Campus · Live View
+          </span>
+          <div class="leg-item"><div class="leg-dot" style="background:var(--g500)"></div> Parking</div>
+          <div class="leg-item"><div class="leg-dot" style="background:var(--red)"></div> Emergency</div>
+          <div class="leg-item"><div class="leg-dot" style="background:var(--amber)"></div> Crowd Alert</div>
+          <div class="leg-item"><div class="leg-dot" style="background:var(--blue)"></div> Lost Person</div>
+          <div class="live-badge"><span class="live-dot" style="width:5px;height:5px"></span> Live</div>
         </div>
-    </section>
+        <canvas id="mainMap" style="height:460px"></canvas>
+      </div>
 
-    <!-- SERVICE SELECTION SECTION -->
-    <section id="service-selection">
-        <div class="container">
-            <div class="selection-header">
-                <div class="selection-badge">
-                    <i class="fa-solid fa-hand-pointer"></i>
-                    <span>Select Your Service</span>
-                </div>
-                <h2>Redemption City Services</h2>
-                <p class="selection-subtitle">Welcome to Redemption City's central hub. Select a service below to get
-                    started with parking, emergency response, or lost person recovery.</p>
+      <!-- Sidebar widgets -->
+      <div class="map-sidebar">
+        <div class="map-widget reveal d1">
+          <div class="mw-head">
+            Zone Occupancy
+            <span style="font-size:.65rem;color:var(--n400);font-family:var(--font-mono)">LIVE</span>
+          </div>
+          <div class="mw-body">
+            <div class="mw-row">
+              <div class="mw-color" style="background:var(--g500)"></div>
+              <span class="mw-name">P-North</span>
+              <span class="mw-pct">78%</span>
+              <div class="mw-bar"><div class="mw-bar-fill" style="width:78%;background:var(--g500)"></div></div>
             </div>
-
-            <div class="selection-cards">
-                <a href="/parking" class="selection-card parking-card">
-                    <div class="selection-icon">
-                        <i class="fa-solid fa-square-parking"></i>
-                    </div>
-                    <h3>Parking</h3>
-                    <p>Find and reserve parking spots in real-time</p>
-                    <div class="selection-arrow">
-                        <i class="fa-solid fa-arrow-right"></i>
-                    </div>
-                </a>
-
-                <a href="/emergency" class="selection-card emergency-card">
-                    <div class="selection-icon">
-                        <i class="fa-solid fa-triangle-exclamation"></i>
-                    </div>
-                    <h3>Emergency</h3>
-                    <p>Report emergencies and get immediate help</p>
-                    <div class="selection-arrow">
-                        <i class="fa-solid fa-arrow-right"></i>
-                    </div>
-                </a>
-
-                <a href="/lost-person" class="selection-card lost-card">
-                    <div class="selection-icon">
-                        <i class="fa-solid fa-user-magnifying-glass"></i>
-                    </div>
-                    <h3>Lost Person / Recovery</h3>
-                    <p>Report or search for lost persons</p>
-                    <div class="selection-arrow">
-                        <i class="fa-solid fa-arrow-right"></i>
-                    </div>
-                </a>
+            <div class="mw-row">
+              <div class="mw-color" style="background:var(--red)"></div>
+              <span class="mw-name">P-South</span>
+              <span class="mw-pct">91%</span>
+              <div class="mw-bar"><div class="mw-bar-fill" style="width:91%;background:var(--red)"></div></div>
             </div>
-
-            <div class="selection-note">
-                <i class="fa-solid fa-circle-info"></i>
-                <span>You must select one of the options above to proceed with the service</span>
+            <div class="mw-row">
+              <div class="mw-color" style="background:var(--g500)"></div>
+              <span class="mw-name">P-West</span>
+              <span class="mw-pct">45%</span>
+              <div class="mw-bar"><div class="mw-bar-fill" style="width:45%;background:var(--g500)"></div></div>
             </div>
+            <div class="mw-row">
+              <div class="mw-color" style="background:var(--amber)"></div>
+              <span class="mw-name">P-East</span>
+              <span class="mw-pct">62%</span>
+              <div class="mw-bar"><div class="mw-bar-fill" style="width:62%;background:var(--amber)"></div></div>
+            </div>
+          </div>
         </div>
-    </section>
 
-    <!-- METRICS SECTION -->
-    <section id="metrics">
-        <div class="container">
-            <div class="section-header">
-                <h2>Redemption City Live Feed</h2>
-                <p>Real-time metrics from across Redemption City's infrastructure</p>
+        <div class="map-widget reveal d2">
+          <div class="mw-head">Active Incidents</div>
+          <div class="mw-body">
+            <div class="inc-item">
+              <div class="inc-dot" style="background:var(--red)"></div>
+              <span class="inc-text">Medical emergency — Zone C, Gate 4</span>
+              <span class="inc-time">2m</span>
             </div>
-            <div class="metrics-grid">
-                <div class="metric-card">
-                    <div class="card-icon green">
-                        <i class="fa-solid fa-square-parking"></i>
-                    </div>
-                    <div class="metric-label">Parking</div>
-                    <div class="metric-value">847</div>
-                    <div class="metric-sub">Available slots</div>
-                    <div class="metric-bar">
-                        <div class="bar-fill green" style="width: 68%"></div>
-                    </div>
-                    <div class="metric-status ok"><span></span> Optimal</div>
-                </div>
-
-                <div class="metric-card">
-                    <div class="card-icon orange">
-                        <i class="fa-solid fa-people-group"></i>
-                    </div>
-                    <div class="metric-label">Crowd Level</div>
-                    <div class="metric-value">74%</div>
-                    <div class="metric-sub">Arena West zone</div>
-                    <div class="metric-bar">
-                        <div class="bar-fill orange" style="width: 74%"></div>
-                    </div>
-                    <div class="metric-status warn"><span></span> High</div>
-                </div>
-
-                <div class="metric-card">
-                    <div class="card-icon blue">
-                        <i class="fa-solid fa-road"></i>
-                    </div>
-                    <div class="metric-label">Traffic Index</div>
-                    <div class="metric-value">62</div>
-                    <div class="metric-sub">Gate 4 bottleneck</div>
-                    <div class="metric-bar">
-                        <div class="bar-fill blue" style="width: 62%"></div>
-                    </div>
-                    <div class="metric-status warn"><span></span> Monitor</div>
-                </div>
-
-                <div class="metric-card">
-                    <div class="card-icon red">
-                        <i class="fa-solid fa-triangle-exclamation"></i>
-                    </div>
-                    <div class="metric-label">Emergencies</div>
-                    <div class="metric-value">3</div>
-                    <div class="metric-sub">Active incidents</div>
-                    <div class="metric-bar">
-                        <div class="bar-fill red" style="width: 12%"></div>
-                    </div>
-                    <div class="metric-status alert"><span></span> Attention</div>
-                </div>
-
-                <div class="metric-card">
-                    <div class="card-icon purple">
-                        <i class="fa-solid fa-magnifying-glass"></i>
-                    </div>
-                    <div class="metric-label">Lost Persons</div>
-                    <div class="metric-value">2</div>
-                    <div class="metric-sub">Search active</div>
-                    <div class="metric-bar">
-                        <div class="bar-fill purple" style="width: 8%"></div>
-                    </div>
-                    <div class="metric-status warn"><span></span> Active</div>
-                </div>
-
-                <div class="metric-card">
-                    <div class="card-icon cyan">
-                        <i class="fa-solid fa-network-wired"></i>
-                    </div>
-                    <div class="metric-label">API Health</div>
-                    <div class="metric-value">99.9%</div>
-                    <div class="metric-sub">System uptime</div>
-                    <div class="metric-bar">
-                        <div class="bar-fill cyan" style="width: 99%"></div>
-                    </div>
-                    <div class="metric-status ok"><span></span> Excellent</div>
-                </div>
+            <div class="inc-item">
+              <div class="inc-dot" style="background:var(--amber)"></div>
+              <span class="inc-text">Crowd surge — Arena West corridor</span>
+              <span class="inc-time">7m</span>
             </div>
+            <div class="inc-item">
+              <div class="inc-dot" style="background:var(--blue)"></div>
+              <span class="inc-text">Lost child reported — Zone B</span>
+              <span class="inc-time">14m</span>
+            </div>
+            <div class="inc-item">
+              <div class="inc-dot" style="background:var(--g500)"></div>
+              <span class="inc-text">Zone 7 near capacity — overflow active</span>
+              <span class="inc-time">21m</span>
+            </div>
+          </div>
         </div>
-    </section>
 
-    <!-- FEATURES SECTION -->
-    <section id="features">
-        <div class="container">
-            <div class="section-header">
-                <h2>Redemption City Features</h2>
-                <p>Everything you need to navigate and thrive in Redemption City</p>
+        <div class="map-widget reveal d3">
+          <div class="mw-head">Camp Coordinates</div>
+          <div class="mw-body" style="padding-top:12px">
+            <div style="font-family:var(--font-mono);font-size:.72rem;color:var(--n700);line-height:2">
+              <div><span style="color:var(--n400)">LAT</span>&nbsp;&nbsp; 6.4531° N</div>
+              <div><span style="color:var(--n400)">LNG</span>&nbsp;&nbsp; 3.3958° E</div>
+              <div><span style="color:var(--n400)">ZONE</span>&nbsp; UTC+1 (WAT)</div>
+              <div><span style="color:var(--n400)">CAMP</span>&nbsp; RCCG Redemption City</div>
             </div>
-            <div class="features-grid">
-                <div class="feature-card">
-                    <div class="feature-header">
-                        <div class="feature-icon"><i class="fa-solid fa-car"></i></div>
-                        <div class="feature-badge">Smart</div>
-                    </div>
-                    <h3>Smart Parking</h3>
-                    <p>AI-powered parking allocation with real-time availability and dynamic pricing.</p>
-                    <a href="#" class="feature-link">Learn more →</a>
-                </div>
-
-                <div class="feature-card">
-                    <div class="feature-header">
-                        <div class="feature-icon"><i class="fa-solid fa-users"></i></div>
-                        <div class="feature-badge">Intelligent</div>
-                    </div>
-                    <h3>Crowd Control</h3>
-                    <p>Heatmaps and density alerts to prevent overcrowding and ensure safety.</p>
-                    <a href="#" class="feature-link">Learn more →</a>
-                </div>
-
-                <div class="feature-card">
-                    <div class="feature-header">
-                        <div class="feature-icon"><i class="fa-solid fa-bell"></i></div>
-                        <div class="feature-badge">Critical</div>
-                    </div>
-                    <h3>Emergency Response</h3>
-                    <p>Instant alerts and optimized routing for first responders and emergency teams.</p>
-                    <a href="#" class="feature-link">Learn more →</a>
-                </div>
-
-                <div class="feature-card">
-                    <div class="feature-header">
-                        <div class="feature-icon"><i class="fa-solid fa-map-location-dot"></i></div>
-                        <div class="feature-badge">Visual</div>
-                    </div>
-                    <h3>Live Mapping</h3>
-                    <p>Real-time 3D visualization of your entire city infrastructure and operations.</p>
-                    <a href="#" class="feature-link">Learn more →</a>
-                </div>
-
-                <div class="feature-card">
-                    <div class="feature-header">
-                        <div class="feature-icon"><i class="fa-solid fa-magnifying-glass"></i></div>
-                        <div class="feature-badge">Advanced</div>
-                    </div>
-                    <h3>Lost & Found</h3>
-                    <p>AI-assisted person recovery using crowd data and mobile integration.</p>
-                    <a href="#" class="feature-link">Learn more →</a>
-                </div>
-
-                <div class="feature-card">
-                    <div class="feature-header">
-                        <div class="feature-icon"><i class="fa-solid fa-bolt"></i></div>
-                        <div class="feature-badge">Powerful</div>
-                    </div>
-                    <h3>Lightning Fast</h3>
-                    <p>Sub-100ms response times with 99.9% uptime SLA guarantee.</p>
-                    <a href="#" class="feature-link">Learn more →</a>
-                </div>
-            </div>
+          </div>
         </div>
-    </section>
+      </div>
+    </div>
 
+  </div>
+</section>
 
-    <!-- FOOTER -->
-    <footer class="footer">
-        <div class="container">
-            <div class="footer-content">
-                <div class="footer-section">
-                    <h4>CampEase</h4>
-                    <p>Redemption City's official civic operations platform</p>
-                </div>
-                <div class="footer-section">
-                    <h4>Product</h4>
-                    <ul>
-                        <li><a href="#">Features</a></li>
-                        <li><a href="#">Pricing</a></li>
-                        <li><a href="#">Security</a></li>
-                    </ul>
-                </div>
-                <div class="footer-section">
-                    <h4>Company</h4>
-                    <ul>
-                        <li><a href="#">About</a></li>
-                        <li><a href="#">Blog</a></li>
-                        <li><a href="#">Careers</a></li>
-                    </ul>
-                </div>
-                <div class="footer-section">
-                    <h4>Legal</h4>
-                    <ul>
-                        <li><a href="#">Privacy</a></li>
-                        <li><a href="#">Terms</a></li>
-                        <li><a href="#">Contact</a></li>
-                    </ul>
-                </div>
-            </div>
-            <div class="footer-bottom">
-                <p>&copy; 2024 CampEase. Proudly serving Redemption City.</p>
-            </div>
+<!-- ═══════════════════════════════════ HOW IT WORKS ═══════════════════════════════════ -->
+<section id="how-it-works">
+  <div class="container">
+
+    <div class="hiw-header reveal">
+      <div class="tag">System Flow</div>
+      <h2>How CampAlly works</h2>
+      <p>From arrival to departure — every touchpoint in Redemption City is intelligently managed.</p>
+    </div>
+
+    <div class="steps-wrap">
+      <!-- SVG connecting line -->
+      <svg class="steps-svg" width="2" viewBox="0 0 2 600" preserveAspectRatio="none" aria-hidden="true">
+        <line x1="1" y1="0" x2="1" y2="600"
+          stroke="var(--g200)" stroke-width="2" stroke-dasharray="6 5"/>
+      </svg>
+
+      <div class="steps-list">
+
+        <div class="step-row reveal-l">
+          <div class="step-card">
+            <div class="step-card-icon sc-g"><i class="fa-solid fa-car-side"></i></div>
+            <h4>Visitor Arrives</h4>
+            <p>Smart entry gates log vehicles and pedestrians. Each visitor is assigned a session ID and real-time guidance begins instantly via mobile or campus kiosks.</p>
+          </div>
+          <div class="step-node"><div class="step-circle">01</div></div>
+          <div></div>
         </div>
-    </footer>
 
-    <script src="{% static 'js/index.js' %}"></script>
+        <div class="step-row flip reveal-r">
+          <div></div>
+          <div class="step-node"><div class="step-circle">02</div></div>
+          <div class="step-card">
+            <div class="step-card-icon sc-a"><i class="fa-solid fa-traffic-light"></i></div>
+            <h4>Traffic is Monitored</h4>
+            <p>AI processes live camera feeds and sensor data to model real-time flow. Congestion zones are identified in seconds and alternate routes are pre-computed.</p>
+          </div>
+        </div>
+
+        <div class="step-row reveal-l">
+          <div class="step-card">
+            <div class="step-card-icon sc-g"><i class="fa-solid fa-square-parking"></i></div>
+            <h4>Parking is Suggested</h4>
+            <p>Based on live slot availability and visitor location, CampEase routes drivers to the optimal bay — reducing search time and easing gate-area congestion.</p>
+          </div>
+          <div class="step-node"><div class="step-circle">03</div></div>
+          <div></div>
+        </div>
+
+        <div class="step-row flip reveal-r">
+          <div></div>
+          <div class="step-node"><div class="step-circle">04</div></div>
+          <div class="step-card">
+            <div class="step-card-icon sc-r"><i class="fa-solid fa-siren-on"></i></div>
+            <h4>Emergencies Dispatched</h4>
+            <p>SOS triggered via app or kiosk. The command centre is notified in under 3 seconds. Nearest responder dispatched with precise GPS coordinates.</p>
+          </div>
+        </div>
+
+        <div class="step-row reveal-l">
+          <div class="step-card">
+            <div class="step-card-icon sc-b"><i class="fa-solid fa-person-circle-check"></i></div>
+            <h4>Lost Persons Recovered</h4>
+            <p>RFID wristband triangulation combined with camera sweep and crowd-sourced alerts enables rapid, compassionate resolution — typically within 30 minutes.</p>
+          </div>
+          <div class="step-node"><div class="step-circle">05</div></div>
+          <div></div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════ COMMAND CENTER ═══════════════════════════════════ -->
+<section id="command-center">
+  <div class="container">
+
+    <div class="cc-header reveal">
+      <div class="tag">Operations Intelligence</div>
+      <h2>Admin Command Centre</h2>
+      <p>A unified operations view for city authorities — every metric, incident, and resource in one place.</p>
+    </div>
+
+    <div class="admin-shell reveal">
+      <!-- Browser chrome -->
+      <div class="admin-chrome">
+        <div class="chrome-dots"><span></span><span></span><span></span></div>
+        <div class="chrome-url">campally.redemptioncamp.ng/admin/command-centre</div>
+        <div class="chrome-status"><span class="cs-dot"></span> All Systems Nominal</div>
+      </div>
+
+      <div class="admin-body">
+        <!-- Sidebar -->
+        <div class="admin-sb">
+          <div class="asb-brand">
+            <div class="asb-brand-icon"><i class="fa-solid fa-city"></i></div>
+            CampAlly
+          </div>
+          <div class="asb-grp">
+            <div class="asb-grp-label">Overview</div>
+            <div class="asb-item on"><i class="fa-solid fa-gauge-high"></i> Dashboard</div>
+            <div class="asb-item"><i class="fa-solid fa-map"></i> City Map</div>
+            <div class="asb-item"><i class="fa-solid fa-chart-line"></i> Analytics</div>
+          </div>
+          <div class="asb-grp">
+            <div class="asb-grp-label">Modules</div>
+            <div class="asb-item"><i class="fa-solid fa-square-parking"></i> Parking <span class="asb-badge g">12</span></div>
+            <div class="asb-item"><i class="fa-solid fa-people-group"></i> Crowd</div>
+            <div class="asb-item"><i class="fa-solid fa-circle-exclamation"></i> Incidents <span class="asb-badge">3</span></div>
+            <div class="asb-item"><i class="fa-solid fa-person-circle-question"></i> Lost</div>
+          </div>
+          <div class="asb-grp">
+            <div class="asb-grp-label">System</div>
+            <div class="asb-item"><i class="fa-solid fa-bell"></i> Alerts</div>
+            <div class="asb-item"><i class="fa-solid fa-gear"></i> Settings</div>
+          </div>
+        </div>
+
+        <!-- Main panel -->
+        <div class="admin-main">
+          <div class="am-top">
+            <span class="am-title">Operations Overview — Live</span>
+            <div class="am-right">
+              <span class="am-live"><span class="live-dot" style="width:5px;height:5px"></span> Nominal</span>
+              <span class="am-clock" id="adminClock"></span>
+            </div>
+          </div>
+
+          <div class="kpi-row">
+            <div class="kpi-box">
+              <div class="kpi-label">Visitors Today</div>
+              <div class="kpi-val" data-count="24853">0</div>
+              <div class="kpi-delta up"><i class="fa-solid fa-arrow-trend-up"></i> +12.4% vs yesterday</div>
+            </div>
+            <div class="kpi-box">
+              <div class="kpi-label">Incidents Resolved</div>
+              <div class="kpi-val" data-count="31">0</div>
+              <div class="kpi-delta up"><i class="fa-solid fa-check"></i> 91.2% rate</div>
+            </div>
+            <div class="kpi-box">
+              <div class="kpi-label">Avg Response</div>
+              <div class="kpi-val">1:24</div>
+              <div class="kpi-delta up"><i class="fa-solid fa-arrow-trend-down"></i> −18s from baseline</div>
+            </div>
+            <div class="kpi-box">
+              <div class="kpi-label">Parking Used</div>
+              <div class="kpi-val" data-count="68" data-suffix="%">0%</div>
+              <div class="kpi-delta nu"><i class="fa-solid fa-arrow-trend-up"></i> +5% since 14:00</div>
+            </div>
+          </div>
+
+          <div class="charts-row">
+            <div class="ch-box">
+              <div class="ch-label">Crowd Density — Last 8 Hours</div>
+              <canvas id="chCrowd"></canvas>
+            </div>
+            <div class="ch-box">
+              <div class="ch-label">Parking Occupancy by Zone</div>
+              <canvas id="chParking"></canvas>
+            </div>
+          </div>
+
+          <div class="feed-box">
+            <div class="feed-label">Live Incident Feed</div>
+            <div class="feed-item">
+              <div class="feed-dot" style="background:var(--red)"></div>
+              <span class="feed-text">Medical emergency — Zone C, Gate 4. Responders dispatched.</span>
+              <span class="feed-badge fb-r">Critical</span>
+              <span class="feed-time">2 min</span>
+            </div>
+            <div class="feed-item">
+              <div class="feed-dot" style="background:var(--amber)"></div>
+              <span class="feed-text">Crowd density 85%+ — Arena West. Redirect active.</span>
+              <span class="feed-badge fb-a">Warning</span>
+              <span class="feed-time">7 min</span>
+            </div>
+            <div class="feed-item">
+              <div class="feed-dot" style="background:var(--blue)"></div>
+              <span class="feed-text">Lost child — Zone B. RFID scan initiated. Parents notified.</span>
+              <span class="feed-badge fb-b">Active</span>
+              <span class="feed-time">14 min</span>
+            </div>
+            <div class="feed-item">
+              <div class="feed-dot" style="background:var(--g500)"></div>
+              <span class="feed-text">Zone 7 approaching capacity. Overflow routing to Zone 11.</span>
+              <span class="feed-badge fb-g">Info</span>
+              <span class="feed-time">21 min</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════ IMPACT ═══════════════════════════════════ -->
+<section id="impact">
+  <div class="container">
+
+    <div class="impact-header reveal">
+      <div class="tag">Proven Results</div>
+      <h2>Numbers that speak for themselves</h2>
+      <p>Outcomes from simulation, pilot deployment, and real event data across Redemption City.</p>
+    </div>
+
+    <div class="impact-grid">
+      <div class="impact-card reveal d1">
+        <div class="impact-num" data-count="68" data-suffix="%">0%</div>
+        <div class="impact-label">Reduction in traffic<br>congestion near event zones</div>
+      </div>
+      <div class="impact-card reveal d2">
+        <div class="impact-num" data-count="73" data-suffix="%">0%</div>
+        <div class="impact-label">Faster emergency<br>response deployment</div>
+      </div>
+      <div class="impact-card reveal d3">
+        <div class="impact-num" data-count="91" data-suffix="%">0%</div>
+        <div class="impact-label">Lost person cases<br>resolved within 30 minutes</div>
+      </div>
+      <div class="impact-card reveal d4">
+        <div class="impact-num" data-count="40" data-suffix="%">0%</div>
+        <div class="impact-label">Improvement in overall<br>visitor satisfaction</div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════ FOOTER ═══════════════════════════════════ -->
+<footer>
+  <div class="container">
+    <div class="foot-grid">
+      <div class="foot-brand">
+        <a href="#" class="nav-logo">
+          <div class="nav-logo-mark"><i class="fa-solid fa-city"></i></div>
+          CampAlly
+        </a>
+        <p>Redemption City's official civic operations platform — smart crowd, traffic, parking, emergency & lost person recovery for large gatherings.</p>
+        <div class="foot-social">
+          <a href="#" aria-label="Twitter"><i class="fa-brands fa-twitter"></i></a>
+          <a href="#" aria-label="LinkedIn"><i class="fa-brands fa-linkedin"></i></a>
+          <a href="#" aria-label="GitHub"><i class="fa-brands fa-github"></i></a>
+          <a href="#" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+        </div>
+      </div>
+      <div class="foot-col">
+        <h4>Platform</h4>
+        <ul>
+          <li><a href="#">Live Dashboard</a></li>
+          <li><a href="#">City Map</a></li>
+          <li><a href="#">Emergency Portal</a></li>
+          <li><a href="#">Parking Management</a></li>
+        </ul>
+      </div>
+      <div class="foot-col">
+        <h4>Operations</h4>
+        <ul>
+          <li><a href="#">Crowd Monitor</a></li>
+          <li><a href="#">Traffic AI</a></li>
+          <li><a href="#">SOS Dispatch</a></li>
+          <li><a href="#">Lost Person Recovery</a></li>
+        </ul>
+      </div>
+      <div class="foot-col">
+        <h4>Contact</h4>
+        <ul>
+          <li><a href="mailto:ops@campease.city"><i class="fa-solid fa-envelope" style="margin-right:5px;color:var(--g300)"></i> ops@campally.city</a></li>
+          <li><a href="tel:+2348000000000"><i class="fa-solid fa-phone" style="margin-right:5px;color:var(--g300)"></i> +234 800 CAMPALLY</a></li>
+          <li><a href="#"><i class="fa-solid fa-location-dot" style="margin-right:5px;color:var(--g300)"></i> Redemption City, NG</a></li>
+          <li><a href="#"><i class="fa-solid fa-shield-halved" style="margin-right:5px;color:var(--g300)"></i> Security Hotline</a></li>
+        </ul>
+      </div>
+    </div>
+    <hr class="foot-divider" style="border:none;border-top:1px solid rgba(255,255,255,.05);margin-bottom:24px">
+    <div class="foot-bottom">
+      <p>© 2026 CampAlly. Proudly serving Redemption City. Built with love  for the RCCG Hackathon.</p>
+      <!-- <span class="built">Built with <span>Django</span> · <span>Python</span> · <span>IoT</span></span> -->
+    </div>
+  </div>
+</footer>
+
+<script src="{% static 'js/index.js' %}"></script>
 </body>
-
 </html>

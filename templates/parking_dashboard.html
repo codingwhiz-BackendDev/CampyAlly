@@ -163,7 +163,7 @@
                         <i class="fa-solid fa-square-parking"></i>
                     </div>
                     <div class="logo-text">
-                        <span class="logo-main">CampEase</span>
+                        <span class="logo-main">CampAlly</span>
                         <span class="logo-badge">Parking</span>
                     </div>
                 </a>
@@ -189,7 +189,7 @@
         </div>
         <div class="nudge-actions">
             <a href="#" id="nudge-btn-yes" class="nudge-btn-yes">
-                <i class="fa-solid fa-square-parking"></i> View Zone & Check In
+                <i class="fa-solid fa-square-parking"></i> View Zone
             </a>
             <button onclick="dismissNudge()" class="nudge-btn-dismiss">Dismiss</button>
         </div>
@@ -227,27 +227,6 @@
                 </div>
             </div>
 
-            <!-- Active Parking Banner -->
-            {% if active_slot %}
-            <div class="active-parking-banner" id="active-banner">
-                <div class="banner-content">
-                    <div class="banner-icon">
-                        <i class="fa-solid fa-car"></i>
-                    </div>
-                    <div class="banner-info">
-                        <div class="banner-title">You're parked in Slot {{ active_slot.slot_number }}</div>
-                        <div class="banner-subtitle">{{ active_slot.zone.name }} · Auto-releases in 24 hours</div>
-                    </div>
-                </div>
-                <form method="post" action="/parking/checkout/" class="checkout-form">
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn-secondary">
-                        <i class="fa-solid fa-right-from-bracket"></i> Check Out
-                    </button>
-                </form>
-            </div>
-            {% endif %}
-
             <!-- Zones Grid -->
             <div class="zones-grid" id="zones-grid">
                 {% for zone in zones %}
@@ -280,6 +259,11 @@
                             <div class="metric-item">
                                 <div class="metric-value total" id="zone-{{ zone.id }}-total">{{ zone.slots.count }}</div>
                                 <div class="metric-label">Total</div>
+                            </div>
+                            <div class="metric-divider"></div>
+                            <div class="metric-item">
+                                <div class="metric-value detected" id="zone-{{ zone.id }}-detected">{{ zone.detected_vehicles_count }}</div>
+                                <div class="metric-label">AI Detected</div>
                             </div>
                         </div>
 

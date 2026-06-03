@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.utils.html import format_html
 from django.utils import timezone
-from .models import ParkingZone, ParkingSlot, CheckInSession,EmergencyReport,EmergencyTimeline,LostFoundReport
+from .models import ParkingZone, ParkingSlot, EmergencyReport, EmergencyTimeline, LostFoundReport
 
 
 # ── Zone admin ────────────────────────────────────────────────────────────────
@@ -108,11 +108,9 @@ class ParkingZoneAdmin(admin.ModelAdmin):
         for zone in queryset:
             zone.slots.filter(status='occupied').update(
                 status='available',
-                occupied_by=None,
-                session_token=None,
-                vehicle_plate=None,
-                occupied_at=None,
-                auto_release_at=None,
+                detected_vehicles=0,
+                last_detection_at=None,
+                confidence_score=None,
             )
             zone.manual_override = False
             zone.override_status = None
@@ -127,18 +125,26 @@ class ParkingZoneAdmin(admin.ModelAdmin):
 class ParkingSlotAdmin(admin.ModelAdmin):
     list_display  = (
         'slot_number', 'zone', 'status_badge',
-        'vehicle_plate', 'occupied_at', 'time_remaining',
+        'detected_vehicles', 'last_detection_at', 'confidence_score', 'updated_at'
     )
     list_filter   = ('status', 'zone')
-    search_fields = ('slot_number', 'vehicle_plate')
-    readonly_fields = ('occupied_at', 'updated_at')
-    actions       = ['force_checkout']
+    search_fields = ('slot_number', 'zone__name')
+    readonly_fields = ('updated_at',)
+
+    fieldsets = (
+        ('Slot Information', {
+            'fields': ('zone', 'slot_number', 'status', 'updated_at')
+        }),
+        ('AI Detection Data', {
+            'fields': ('detected_vehicles', 'last_detection_at', 'confidence_score'),
+            'description': 'Automatically updated by YOLO vehicle detection. Security staff can manually edit if needed.'
+        }),
+    )
 
     def status_badge(self, obj):
         colors = {
             'available': ('#27ae60', 'Available'),
             'occupied':  ('#e74c3c', 'Occupied'),
-            'reserved':  ('#3498db', 'Reserved'),
             'blocked':   ('#7f8c8d', 'Blocked'),
         }
         color, label = colors.get(obj.status, ('#999', obj.status))
@@ -149,38 +155,9 @@ class ParkingSlotAdmin(admin.ModelAdmin):
         )
     status_badge.short_description = 'Status'
 
-    def time_remaining(self, obj):
-        if not obj.auto_release_at:
-            return '—'
-        remaining = obj.auto_release_at - timezone.now()
-        if remaining.total_seconds() <= 0:
-            return format_html('<span style="color:red;">⚠ Expired</span>')
-        h, rem = divmod(int(remaining.total_seconds()), 3600)
-        m = rem // 60
-        return f"{h}h {m}m"
-    time_remaining.short_description = 'Auto-release in'
-
-    def force_checkout(self, request, queryset):
-        for slot in queryset:
-            slot.check_out()
-        self.message_user(request, f"{queryset.count()} slot(s) checked out.")
-    force_checkout.short_description = "⬅ Force check-out selected slots"
-
 
 # ── Session admin ─────────────────────────────────────────────────────────────
-
-@admin.register(CheckInSession)
-class CheckInSessionAdmin(admin.ModelAdmin):
-    list_display  = ('token_short', 'slot', 'vehicle_plate', 'checked_in_at', 'is_active')
-    list_filter   = ('is_active',)
-    readonly_fields = ('token', 'checked_in_at')
-
-    def token_short(self, obj):
-        return f"{str(obj.token)[:12]}…"
-    token_short.short_description = 'Session'
-    
-    
-
+# Removed - CheckInSession model no longer used with AI detection
 
 admin.site.register(EmergencyReport)
 admin.site.register(EmergencyTimeline)
