@@ -14,6 +14,235 @@
     <link rel="stylesheet" href="{% static 'css/index.css' %}">
     <link rel="stylesheet" href="{% static 'css/parking.css' %}">
     <link rel="stylesheet" href="{% static 'css/zone_detail.css' %}">
+
+    <style>
+        /* ── Enhanced Animations ───────────────────────────────────────── */
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        @keyframes glow-pulse {
+            0%, 100% { box-shadow: 0 0 20px rgba(16, 185, 129, 0.3); }
+            50% { box-shadow: 0 0 40px rgba(16, 185, 129, 0.6); }
+        }
+        @keyframes slide-in-left {
+            from { opacity: 0; transform: translateX(-30px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes slide-in-right {
+            from { opacity: 0; transform: translateX(30px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes scale-in {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        @keyframes bounce-subtle {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+        @keyframes gradient-shift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        @keyframes ripple {
+            0% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(2.5); opacity: 0; }
+        }
+        @keyframes text-shimmer {
+            0% { background-position: -200% center; }
+            100% { background-position: 200% center; }
+        }
+        @keyframes slot-pop {
+            0% { opacity: 0; transform: scale(0.8) translateY(20px); }
+            60% { transform: scale(1.05) translateY(-5px); }
+            100% { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        @keyframes icon-bounce {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            25% { transform: translateY(-8px) rotate(-5deg); }
+            75% { transform: translateY(-8px) rotate(5deg); }
+        }
+
+        /* ── Enhanced Zone Header ────────────────────────────────────────── */
+        .zone-header {
+            animation: slide-in-left 0.8s ease-out;
+        }
+        .zone-title {
+            background: linear-gradient(135deg, #10b981 0%, #06b6d4 50%, #8b5cf6 100%);
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: gradient-shift 3s ease infinite;
+        }
+        .zone-badge {
+            position: relative;
+            overflow: hidden;
+        }
+        .zone-badge::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(
+                45deg,
+                transparent,
+                rgba(255, 255, 255, 0.3),
+                transparent
+            );
+            transform: rotate(45deg);
+            animation: shimmer 3s infinite;
+        }
+
+        /* ── Enhanced Zone Stats ──────────────────────────────────────────── */
+        .zone-stats {
+            animation: slide-in-right 0.8s ease-out 0.2s both;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.95) 100%);
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(16, 185, 129, 0.15);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+        }
+        .zone-stat {
+            position: relative;
+            overflow: hidden;
+        }
+        .zone-stat::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(
+                45deg,
+                transparent,
+                rgba(16, 185, 129, 0.08),
+                transparent
+            );
+            transform: rotate(45deg);
+            animation: shimmer 4s infinite;
+        }
+        .zone-stat .stat-value {
+            background: linear-gradient(135deg, #10b981 0%, #06b6d4 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        /* ── Enhanced Slot Cards ──────────────────────────────────────────── */
+        .slot-card {
+            animation: slot-pop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+        }
+        .slot-card:nth-child(1) { animation-delay: 0.05s; }
+        .slot-card:nth-child(2) { animation-delay: 0.1s; }
+        .slot-card:nth-child(3) { animation-delay: 0.15s; }
+        .slot-card:nth-child(4) { animation-delay: 0.2s; }
+        .slot-card:nth-child(5) { animation-delay: 0.25s; }
+        .slot-card:nth-child(6) { animation-delay: 0.3s; }
+        .slot-card:nth-child(n+7) { animation-delay: 0.35s; }
+
+        .slot-card.status-available:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 20px 40px rgba(16, 185, 129, 0.2);
+        }
+        .slot-card.status-available:hover .slot-icon {
+            animation: icon-bounce 0.6s ease infinite;
+        }
+        .slot-card.status-occupied:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 20px 40px rgba(249, 115, 22, 0.2);
+        }
+        .slot-card.is-mine {
+            animation: glow-pulse 2s ease-in-out infinite;
+        }
+
+        /* ── Enhanced Slot Icon ───────────────────────────────────────────── */
+        .slot-icon {
+            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .slot-card.status-available .slot-icon {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(16, 185, 129, 0.05) 100%);
+            color: #10b981;
+        }
+        .slot-card.status-occupied .slot-icon {
+            background: linear-gradient(135deg, rgba(249, 115, 22, 0.2) 0%, rgba(249, 115, 22, 0.05) 100%);
+            color: #f97316;
+        }
+        .slot-card.status-reserved .slot-icon {
+            background: linear-gradient(135deg, rgba(168, 85, 247, 0.2) 0%, rgba(168, 85, 247, 0.05) 100%);
+            color: #a855f7;
+        }
+        .slot-card.is-mine .slot-icon {
+            background: linear-gradient(135deg, #10b981 0%, #06b6d4 100%);
+            color: white;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        /* ── Enhanced Breadcrumb ───────────────────────────────────────────── */
+        .breadcrumb-link {
+            position: relative;
+            transition: all 0.3s ease;
+        }
+        .breadcrumb-link::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #10b981, #06b6d4);
+            transition: width 0.3s ease;
+        }
+        .breadcrumb-link:hover::after {
+            width: 100%;
+        }
+
+        /* ── Enhanced Footer ──────────────────────────────────────────────── */
+        .zone-footer {
+            animation: slide-in-up 0.8s ease-out 0.4s both;
+        }
+        @keyframes slide-in-up {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .status-dot {
+            position: relative;
+        }
+        .status-dot::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: inherit;
+            animation: ripple 2s infinite;
+        }
+
+        /* ── Enhanced Empty State ─────────────────────────────────────────── */
+        .empty-state {
+            animation: scale-in 0.6s ease-out;
+        }
+        .empty-icon {
+            animation: float 3s ease-in-out infinite;
+        }
+    </style>
 </head>
 
 <body>

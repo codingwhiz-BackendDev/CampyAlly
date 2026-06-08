@@ -12,136 +12,287 @@
         rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
-    <!-- Leaflet CSS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
     <link rel="stylesheet" href="{% static 'css/index.css' %}">
     <link rel="stylesheet" href="{% static 'css/parking.css' %}">
 
     <style>
+        /* ── Enhanced Animations ───────────────────────────────────────── */
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        @keyframes glow-pulse {
+            0%, 100% { box-shadow: 0 0 20px rgba(16, 185, 129, 0.3); }
+            50% { box-shadow: 0 0 40px rgba(16, 185, 129, 0.6); }
+        }
+        @keyframes slide-in-left {
+            from { opacity: 0; transform: translateX(-30px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes slide-in-right {
+            from { opacity: 0; transform: translateX(30px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes scale-in {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        @keyframes rotate-slow {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        @keyframes bounce-subtle {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+        @keyframes gradient-shift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        @keyframes ripple {
+            0% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(2.5); opacity: 0; }
+        }
+        @keyframes text-shimmer {
+            0% { background-position: -200% center; }
+            100% { background-position: 200% center; }
+        }
+
         /* ── Geofence nudge banner ───────────────────────────────────────── */
         #geo-nudge {
-            display: none;                 /* shown by JS when near a zone   */
+            display: none;
             position: fixed;
             bottom: 24px;
             left: 50%;
             transform: translateX(-50%);
             z-index: 9999;
-            background: #1a1a2e;
-            border: 1px solid rgba(99, 179, 237, 0.5);
-            border-radius: 14px;
-            padding: 16px 20px;
-            min-width: 320px;
+            background: linear-gradient(135deg, rgba(26, 26, 46, 0.95) 0%, rgba(15, 23, 42, 0.95) 100%);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(99, 179, 237, 0.3);
+            border-radius: 20px;
+            padding: 20px 24px;
+            min-width: 340px;
             max-width: 90vw;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
-            animation: nudge-in 0.3s ease;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.4), 0 0 40px rgba(99, 179, 237, 0.2);
+            animation: nudge-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
         @keyframes nudge-in {
-            from { opacity: 0; transform: translateX(-50%) translateY(12px); }
-            to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+            from { opacity: 0; transform: translateX(-50%) translateY(20px) scale(0.9); }
+            to   { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
         }
         #geo-nudge .nudge-row {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 16px;
         }
         #geo-nudge .nudge-icon {
-            width: 40px; height: 40px;
-            border-radius: 10px;
-            background: rgba(99,179,237,0.15);
+            width: 48px; height: 48px;
+            border-radius: 14px;
+            background: linear-gradient(135deg, rgba(99,179,237,0.2) 0%, rgba(99,179,237,0.05) 100%);
             display: flex; align-items: center; justify-content: center;
-            color: #63b3ed; font-size: 18px;
+            color: #63b3ed; font-size: 20px;
             flex-shrink: 0;
+            animation: float 3s ease-in-out infinite;
         }
         #geo-nudge .nudge-text strong {
             display: block;
             color: #e2e8f0;
-            font-size: 14px;
+            font-size: 15px;
             font-family: 'Space Grotesk', sans-serif;
+            font-weight: 700;
         }
         #geo-nudge .nudge-text span {
-            font-size: 12px;
-            color: #718096;
+            font-size: 13px;
+            color: #94a3b8;
         }
         #geo-nudge .nudge-actions {
             display: flex;
-            gap: 8px;
-            margin-top: 12px;
+            gap: 10px;
+            margin-top: 16px;
         }
         #geo-nudge .nudge-btn-yes {
             flex: 1;
-            padding: 9px 16px;
-            background: #63b3ed;
+            padding: 12px 20px;
+            background: linear-gradient(135deg, #63b3ed 0%, #4299e1 100%);
             color: #0a0a1a;
             border: none;
-            border-radius: 8px;
+            border-radius: 12px;
             font-weight: 700;
             font-family: 'Space Grotesk', sans-serif;
-            font-size: 13px;
+            font-size: 14px;
             cursor: pointer;
             text-decoration: none;
             text-align: center;
-            transition: background 0.15s;
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            position: relative;
+            overflow: hidden;
         }
-        #geo-nudge .nudge-btn-yes:hover { background: #4299e1; }
+        #geo-nudge .nudge-btn-yes::before {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%;
+            width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: left 0.5s;
+        }
+        #geo-nudge .nudge-btn-yes:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(99, 179, 237, 0.4);
+        }
+        #geo-nudge .nudge-btn-yes:hover::before {
+            left: 100%;
+        }
         #geo-nudge .nudge-btn-dismiss {
-            padding: 9px 14px;
+            padding: 12px 16px;
             background: transparent;
-            color: #718096;
-            border: 1px solid #2d3748;
-            border-radius: 8px;
-            font-size: 13px;
+            color: #94a3b8;
+            border: 1px solid #334155;
+            border-radius: 12px;
+            font-size: 14px;
             cursor: pointer;
-            transition: all 0.15s;
+            transition: all 0.3s ease;
         }
-        #geo-nudge .nudge-btn-dismiss:hover { color: #a0aec0; border-color: #4a5568; }
+        #geo-nudge .nudge-btn-dismiss:hover {
+            color: #e2e8f0;
+            border-color: #475569;
+            background: rgba(255,255,255,0.05);
+        }
 
         /* ── Per-zone map ────────────────────────────────────────────────── */
         .zone-map-wrap {
-            margin-top: 14px;
-            border-radius: 10px;
+            margin-top: 16px;
+            border-radius: 16px;
             overflow: hidden;
-            border: 1px solid rgba(255,255,255,0.07);
+            border: 2px solid rgba(16, 185, 129, 0.15);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            transition: all 0.3s ease;
+            animation: scale-in 0.6s ease-out;
+        }
+        .zone-map-wrap:hover {
+            border-color: rgba(16, 185, 129, 0.3);
+            box-shadow: 0 8px 30px rgba(16, 185, 129, 0.15);
         }
         .zone-map {
-            height: 160px;
+            height: 180px;
             width: 100%;
-            background: #111;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            border: none;
         }
         .zone-map-footer {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 8px 12px;
-            background: rgba(255,255,255,0.03);
-            font-size: 12px;
-            color: #718096;
+            padding: 12px 16px;
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.05) 0%, rgba(6, 182, 212, 0.05) 100%);
+            font-size: 13px;
+            color: #64748b;
+            border-top: 1px solid rgba(16, 185, 129, 0.1);
         }
         .zone-map-footer a {
-            color: #63b3ed;
+            color: #10b981;
             text-decoration: none;
-            font-weight: 600;
+            font-weight: 700;
             display: flex;
             align-items: center;
-            gap: 4px;
-            transition: color 0.15s;
+            gap: 6px;
+            transition: all 0.3s ease;
+            padding: 8px 16px;
+            border-radius: 10px;
+            background: rgba(16, 185, 129, 0.1);
         }
-        .zone-map-footer a:hover { color: #90cdf4; }
+        .zone-map-footer a:hover {
+            color: #059669;
+            background: rgba(16, 185, 129, 0.2);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+        }
         .no-coords-notice {
-            height: 160px;
+            height: 180px;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: 6px;
-            background: rgba(255,255,255,0.02);
-            color: #4a5568;
-            font-size: 13px;
-            border-radius: 10px;
-            border: 1px dashed #2d3748;
-            margin-top: 14px;
+            gap: 12px;
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.03) 0%, rgba(6, 182, 212, 0.03) 100%);
+            color: #64748b;
+            font-size: 14px;
+            border-radius: 16px;
+            border: 2px dashed rgba(16, 185, 129, 0.2);
+            margin-top: 16px;
+            animation: scale-in 0.6s ease-out;
         }
-        .no-coords-notice i { font-size: 22px; }
+        .no-coords-notice i {
+            font-size: 32px;
+            color: #10b981;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        /* ── Enhanced Zone Cards ──────────────────────────────────────────── */
+        .zone-card-wrap {
+            animation: slide-in-up 0.6s ease-out both;
+        }
+        .zone-card-wrap:nth-child(1) { animation-delay: 0.1s; }
+        .zone-card-wrap:nth-child(2) { animation-delay: 0.15s; }
+        .zone-card-wrap:nth-child(3) { animation-delay: 0.2s; }
+        .zone-card-wrap:nth-child(4) { animation-delay: 0.25s; }
+        .zone-card-wrap:nth-child(5) { animation-delay: 0.3s; }
+        .zone-card-wrap:nth-child(6) { animation-delay: 0.35s; }
+
+        @keyframes slide-in-up {
+            from {
+                opacity: 0;
+                transform: translateY(40px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* ── Enhanced Stats ──────────────────────────────────────────────── */
+        .stat-card {
+            position: relative;
+            overflow: hidden;
+        }
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(
+                45deg,
+                transparent,
+                rgba(16, 185, 129, 0.1),
+                transparent
+            );
+            transform: rotate(45deg);
+            animation: shimmer 3s infinite;
+        }
+
+        /* ── Live Indicator Animation ─────────────────────────────────────── */
+        .live-dot {
+            position: relative;
+        }
+        .live-dot::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: inherit;
+            animation: ripple 2s infinite;
+        }
     </style>
 </head>
 
@@ -225,6 +376,22 @@
                         <div class="stat-label">Active Zones</div>
                     </div>
                 </div>
+                <style>
+                    .stat-value {
+                        background: linear-gradient(135deg, #10b981 0%, #06b6d4 100%);
+                        -webkit-background-clip: text;
+                        -webkit-text-fill-color: transparent;
+                        background-clip: text;
+                    }
+                    .gradient-text {
+                        background: linear-gradient(135deg, #10b981 0%, #06b6d4 50%, #8b5cf6 100%);
+                        background-size: 200% auto;
+                        -webkit-background-clip: text;
+                        -webkit-text-fill-color: transparent;
+                        background-clip: text;
+                        animation: gradient-shift 3s ease infinite;
+                    }
+                </style>
             </div>
 
             <!-- Zones Grid -->
@@ -285,14 +452,16 @@
                     <!-- Map section — outside the <a> tag so clicks don't navigate -->
                     {% if zone.latitude != 0.0 or zone.longitude != 0.0 %}
                     <div class="zone-map-wrap">
-                        <div class="zone-map" id="map-{{ zone.id }}"
-                             data-lat="{{ zone.latitude }}"
-                             data-lng="{{ zone.longitude }}"
-                             data-name="{{ zone.name }}">
-                        </div>
+                        <iframe
+                            class="zone-map"
+                            src="https://maps.google.com/maps?q={{ zone.latitude }},{{ zone.longitude }}&z=15&output=embed"
+                            allowfullscreen
+                            loading="lazy"
+                            referrerpolicy="no-referrer-when-downgrade">
+                        </iframe>
                         <div class="zone-map-footer">
                             <span><i class="fa-solid fa-location-dot"></i> {{ zone.latitude|floatformat:4 }}, {{ zone.longitude|floatformat:4 }}</span>
-                            <a href="https://www.openstreetmap.org/directions?from=&to={{ zone.latitude }},{{ zone.longitude }}" target="_blank" rel="noopener">
+                            <a href="https://www.google.com/maps/dir/?api=1&destination={{ zone.latitude }},{{ zone.longitude }}" target="_blank" rel="noopener">
                                 <i class="fa-solid fa-diamond-turn-right"></i> Get Directions
                             </a>
                         </div>
@@ -327,14 +496,6 @@
             </div>
         </div>
     </section>
-
-    <!-- Leaflet JS -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
-    <!-- Zone geo data from Django (safe JSON) -->
-    <script>
-        const ZONES_GEO = {{ zones_geo|safe }};
-    </script>
 
     <script src="{% static 'js/parking_dashboard.js' %}"></script>
 </body>
