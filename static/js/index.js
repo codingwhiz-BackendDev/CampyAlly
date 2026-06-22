@@ -479,6 +479,301 @@ function countUp(el) {
   }
 })();
 
+/* ── SERVICE MODAL ──────────────────────────────────────── */
+(function () {
+  const CAMPUS_LOCATIONS = [
+    { label: 'Main Auditorium',       lat: 6.4531, lng: 3.3958 },
+    { label: 'Gate A — North Entrance', lat: 6.4600, lng: 3.3958 },
+    { label: 'Gate B — South Entrance', lat: 6.4462, lng: 3.3958 },
+    { label: 'Prayer City (North Wing)', lat: 6.4578, lng: 3.3968 },
+    { label: 'Campground West',        lat: 6.4531, lng: 3.3905 },
+    { label: 'Campground East',        lat: 6.4531, lng: 3.4010 },
+    { label: 'Arena West',             lat: 6.4540, lng: 3.3928 },
+    { label: 'Market Area',            lat: 6.4510, lng: 3.3972 },
+    { label: 'Family Centre',          lat: 6.4550, lng: 3.3968 },
+    { label: 'Filling Station',        lat: 6.4500, lng: 3.3942 },
+  ];
+
+  function haversineKm(lat1, lng1, lat2, lng2) {
+    const R = 6371;
+    const dlat = (lat2 - lat1) * Math.PI / 180;
+    const dlng = (lng2 - lng1) * Math.PI / 180;
+    const a = Math.sin(dlat / 2) ** 2
+      + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dlng / 2) ** 2;
+    return R * 2 * Math.asin(Math.sqrt(a));
+  }
+
+  const overlay  = document.getElementById('serviceModal');
+  const content  = document.getElementById('modalContent');
+  const closeBtn = document.getElementById('modalClose');
+
+  function openModal(html) {
+    content.innerHTML = html;
+    overlay.hidden = false;
+    document.body.style.overflow = 'hidden';
+    overlay.querySelector('button,a,[tabindex]')?.focus();
+  }
+
+  function closeModal() {
+    overlay.hidden = true;
+    document.body.style.overflow = '';
+  }
+
+  if (closeBtn) closeBtn.addEventListener('click', closeModal);
+  overlay?.addEventListener('click', e => { if (e.target === overlay) closeModal(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && !overlay?.hidden) closeModal(); });
+
+  /* ── PARKING ─────────────────────────────────────────── */
+  function showParkingStep1() {
+    const opts = CAMPUS_LOCATIONS
+      .map(l => `<option value="${l.label}">${l.label}</option>`)
+      .join('');
+    openModal(`
+      <div class="svc-modal-icon parking"><i class="fa-solid fa-square-parking"></i></div>
+      <h3 class="svc-modal-title" id="modalTitle">Find Your Parking</h3>
+      <p class="svc-modal-sub">Tell us where you are in camp and we'll suggest the nearest available parking zone.</p>
+      <div class="svc-form-group">
+        <label class="svc-label" for="campLocation">Where are you right now?</label>
+        <select id="campLocation" class="svc-select">
+          <option value="">— Select your location in camp —</option>
+          ${opts}
+        </select>
+      </div>
+      <div class="svc-form-group">
+        <label class="svc-label">What do you need?</label>
+        <div class="svc-radio-group">
+          <label class="svc-radio"><input type="radio" name="parkingNeed" value="find" checked> Find the nearest available parking</label>
+          <label class="svc-radio"><input type="radio" name="parkingNeed" value="check"> Check all zone availability</label>
+        </div>
+      </div>
+      <button id="findParkingBtn" class="svc-btn">
+        <i class="fa-solid fa-magnifying-glass-location"></i> Find Best Parking Spot
+      </button>
+      <a href="/parking" class="svc-link">Skip — view full parking dashboard &rarr;</a>
+    `);
+    document.getElementById('findParkingBtn').addEventListener('click', () => {
+      const loc  = document.getElementById('campLocation').value;
+      const need = document.querySelector('input[name="parkingNeed"]:checked')?.value;
+      if (!loc) {
+        document.getElementById('campLocation').focus();
+        document.getElementById('campLocation').style.borderColor = 'var(--red)';
+        return;
+      }
+      if (need === 'check') { window.location.href = '/parking'; return; }
+      showParkingResult(loc);
+    });
+  }
+
+  function showParkingResult(locationName) {
+    content.innerHTML = `
+      <div class="svc-loading">
+        <div class="svc-spinner"></div>
+        <p>Scanning parking zones near <strong>${locationName}</strong>&hellip;</p>
+      </div>
+    `;
+    const userLoc = CAMPUS_LOCATIONS.find(l => l.label === locationName);
+
+    fetch('/parking/api/status/')
+      .then(r => r.json())
+      .then(data => {
+        const zones     = data.zones || [];
+        const available = zones.filter(z => z.available > 0);
+
+        if (!available.length) {
+          content.innerHTML = `
+            <div class="svc-modal-icon r"><i class="fa-solid fa-circle-exclamation"></i></div>
+            <h3 class="svc-modal-title">All Zones Currently Full</h3>
+            <p class="svc-modal-sub">All parking zones are at capacity right now. Please check back in a few minutes or contact the command centre.</p>
+            <a href="/parking" class="svc-btn"><i class="fa-solid fa-gauge-high"></i> View Live Parking Dashboard</a>
+            <button id="backBtn" class="svc-link">Try a different location</button>
+          `;
+          document.getElementById('backBtn').addEventListener('click', showParkingStep1);
+          return;
+        }
+
+        /* Find nearest zone with real GPS coords, else fall back to most available */
+        let best, bestDist;
+        if (userLoc) {
+          const scored = available.map(z => {
+            const hasCoords = !(z.lat === 0 && z.lng === 0);
+            const dist = hasCoords ? haversineKm(userLoc.lat, userLoc.lng, z.lat, z.lng) : Infinity;
+            return { ...z, dist };
+          });
+          const withCoords = scored.filter(z => z.dist !== Infinity);
+          if (withCoords.length) {
+            withCoords.sort((a, b) => a.dist - b.dist);
+            best     = withCoords[0];
+            bestDist = best.dist;
+          } else {
+            best = available.sort((a, b) => b.available - a.available)[0];
+          }
+        } else {
+          best = available.sort((a, b) => b.available - a.available)[0];
+        }
+
+        const distText = (bestDist != null)
+          ? `~${bestDist < 1 ? (bestDist * 1000).toFixed(0) + 'm' : bestDist.toFixed(1) + 'km'} from ${locationName}`
+          : '';
+        const stColor  = best.status === 'open' ? '#27873d' : '#b45309';
+
+        const alts = available
+          .filter(z => z.id !== best.id)
+          .sort((a, b) => b.available - a.available)
+          .slice(0, 2);
+
+        content.innerHTML = `
+          <div class="svc-modal-icon parking"><i class="fa-solid fa-circle-check"></i></div>
+          <h3 class="svc-modal-title" id="modalTitle">Best Parking for You</h3>
+          <p class="svc-modal-sub">Based on your location at <strong>${locationName}</strong>:</p>
+
+          <div class="svc-zone-card best">
+            <div class="svc-zone-header">
+              <span class="svc-zone-name">${best.name}</span>
+              <span class="svc-zone-badge" style="background:${stColor}20;color:${stColor}">${best.status.toUpperCase()}</span>
+            </div>
+            <div class="svc-zone-stats">
+              <div class="svc-zone-stat">
+                <span class="stat-num">${best.available}</span>
+                <span class="stat-label">Free Slots</span>
+              </div>
+              <div class="svc-zone-stat">
+                <span class="stat-num">${best.total}</span>
+                <span class="stat-label">Total</span>
+              </div>
+              <div class="svc-zone-stat">
+                <span class="stat-num">${best.percent}%</span>
+                <span class="stat-label">Occupied</span>
+              </div>
+            </div>
+            ${distText ? `<div class="svc-zone-dist"><i class="fa-solid fa-location-crosshairs"></i> ${distText}</div>` : ''}
+          </div>
+
+          ${alts.length ? `
+            <div class="svc-alt-label">Other available zones:</div>
+            <div class="svc-alt-zones">
+              ${alts.map(z => `
+                <a href="/parking/zone/${z.id}/" class="svc-alt-zone">
+                  <span>${z.name}</span>
+                  <span class="svc-alt-avail">${z.available} free</span>
+                </a>
+              `).join('')}
+            </div>
+          ` : ''}
+
+          <a href="/parking/zone/${best.id}/" class="svc-btn">
+            <i class="fa-solid fa-arrow-right"></i> Go to ${best.name}
+          </a>
+          <a href="/parking" class="svc-link">View all parking zones &rarr;</a>
+          <button id="backBtn" class="svc-link">Change my location</button>
+        `;
+        document.getElementById('backBtn').addEventListener('click', showParkingStep1);
+      })
+      .catch(() => {
+        content.innerHTML = `
+          <div class="svc-modal-icon r"><i class="fa-solid fa-wifi-exclamation"></i></div>
+          <h3 class="svc-modal-title">Connection Error</h3>
+          <p class="svc-modal-sub">Could not load real-time parking data. Please try again or visit the dashboard.</p>
+          <button id="retryBtn" class="svc-btn">Try Again</button>
+          <a href="/parking" class="svc-link">Go to parking dashboard &rarr;</a>
+        `;
+        document.getElementById('retryBtn').addEventListener('click', () => showParkingResult(locationName));
+      });
+  }
+
+  /* ── EMERGENCY ───────────────────────────────────────── */
+  function showEmergencyModal() {
+    const locOpts = CAMPUS_LOCATIONS
+      .map(l => `<option value="${l.label}">${l.label}</option>`)
+      .join('');
+    openModal(`
+      <div class="svc-modal-icon r"><i class="fa-solid fa-triangle-exclamation"></i></div>
+      <h3 class="svc-modal-title" id="modalTitle">Emergency Response</h3>
+      <p class="svc-modal-sub">Help us dispatch the right response fast. Answer two quick questions.</p>
+      <div class="svc-form-group">
+        <label class="svc-label" for="emergencyType">Type of emergency</label>
+        <select id="emergencyType" class="svc-select">
+          <option value="">— Select emergency type —</option>
+          <option value="medical">Medical Emergency</option>
+          <option value="fire">Fire Outbreak</option>
+          <option value="security">Security Threat</option>
+          <option value="missing">Missing Child</option>
+          <option value="traffic">Traffic Accident</option>
+          <option value="stampede">Crowd Stampede</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+      <div class="svc-form-group">
+        <label class="svc-label" for="emergencyLocation">Where in camp?</label>
+        <select id="emergencyLocation" class="svc-select">
+          <option value="">— Select your location —</option>
+          ${locOpts}
+          <option value="Not sure">Not sure</option>
+        </select>
+      </div>
+      <button id="proceedEmergency" class="svc-btn svc-btn-danger">
+        <i class="fa-solid fa-siren-on"></i> Proceed to Emergency Report
+      </button>
+      <p class="svc-modal-note">
+        <i class="fa-solid fa-phone"></i> Life-threatening? Call security directly:&nbsp;<strong>+234 800 CAMPALLY</strong>
+      </p>
+    `);
+    document.getElementById('proceedEmergency').addEventListener('click', () => {
+      const type = document.getElementById('emergencyType').value;
+      const loc  = document.getElementById('emergencyLocation').value;
+      const params = new URLSearchParams();
+      if (type) params.set('type', type);
+      if (loc)  params.set('location', loc);
+      window.location.href = '/emergency' + (params.toString() ? '?' + params.toString() : '');
+    });
+  }
+
+  /* ── LOST PERSON ─────────────────────────────────────── */
+  function showLostPersonModal() {
+    openModal(`
+      <div class="svc-modal-icon lost"><i class="fa-solid fa-person-circle-question"></i></div>
+      <h3 class="svc-modal-title" id="modalTitle">Lost Person Recovery</h3>
+      <p class="svc-modal-sub">What are you reporting? We'll take you directly to the right form.</p>
+      <div class="svc-choice-grid">
+        <button class="svc-choice-btn" data-cat="lost_person">
+          <i class="fa-solid fa-person-circle-xmark"></i>
+          <span>I'm looking for<br>a lost person</span>
+        </button>
+        <button class="svc-choice-btn" data-cat="found_person">
+          <i class="fa-solid fa-person-circle-check"></i>
+          <span>I found someone<br>who looks lost</span>
+        </button>
+        <button class="svc-choice-btn" data-cat="lost_item">
+          <i class="fa-solid fa-box-open"></i>
+          <span>I lost<br>an item</span>
+        </button>
+        <button class="svc-choice-btn" data-cat="found_item">
+          <i class="fa-solid fa-hand-holding"></i>
+          <span>I found<br>an item</span>
+        </button>
+      </div>
+      <a href="/lost-person" class="svc-link">View all active reports &rarr;</a>
+    `);
+    document.querySelectorAll('.svc-choice-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        window.location.href = `/lost-person?category=${btn.dataset.cat}`;
+      });
+    });
+  }
+
+  /* ── Wire service cards ─────────────────────────────── */
+  document.querySelectorAll('.sel-card[data-service]').forEach(card => {
+    card.addEventListener('click', () => {
+      const svc = card.dataset.service;
+      if (svc === 'parking')   showParkingStep1();
+      if (svc === 'emergency') showEmergencyModal();
+      if (svc === 'lost')      showLostPersonModal();
+    });
+    card.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); card.click(); }
+    });
+  });
+})();
+
 /* ── VIDEO FALLBACK / CONTROL ───────────────────────────── */
 (function () {
   const video = document.getElementById('heroVideo');

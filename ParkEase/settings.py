@@ -25,7 +25,12 @@ SECRET_KEY = 'django-insecure-7m$7nd9zdrok415qqxemg59eei3bkksvct1lket=-5(qx_f8t9
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+# '*' lets Twilio reach the webhook through an ngrok tunnel during the demo.
+# Lock this down to your real host before any production use.
+ALLOWED_HOSTS = ['*']
+
+# Allow Twilio/ngrok POSTs (e.g. the WhatsApp webhook) through CSRF host checks.
+CSRF_TRUSTED_ORIGINS = ['https://*.ngrok-free.app', 'https://*.ngrok.io']
 
 
 # Application definition
@@ -124,6 +129,15 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 import os
+
+# Load .env file from project root if it exists (dev convenience)
+_env_path = BASE_DIR / '.env'
+if _env_path.exists():
+    for _line in _env_path.read_text().splitlines():
+        _line = _line.strip()
+        if _line and not _line.startswith('#') and '=' in _line:
+            _k, _, _v = _line.partition('=')
+            os.environ.setdefault(_k.strip(), _v.strip())
 
 # Static files (CSS, JavaScript, Images)
 STATIC_URL = '/static/'

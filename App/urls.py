@@ -15,6 +15,9 @@ urlpatterns = [
     # /parking/api/zone/1/
     path('api/zone/<int:zone_id>/', views.api_zone_status, name='api_zone_status'),
 
+    # /parking/api/run-detection/
+    path('api/run-detection/', views.api_run_detection, name='api_run_detection'),
+
     # /parking/emergency_page/
     path('emergency_page/', views.emergency_page, name='emergency_page'),
 

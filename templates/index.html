@@ -70,10 +70,11 @@
       </div>
 
       <h1 class="hero-headline">
-        Redemption City's<br>
-        <span class="accent">smart command centre</span><br>
-        for safer, smoother gatherings.
+        Your city.<br>
+        <span class="accent">One message away.</span>
       </h1>
+
+      <p class="hero-sub">Report emergencies. Find the lost. Park smarter.<br>All from a single WhatsApp chat — powered by AI.</p>
 
       <!-- Cycling sub-phrases -->
       <div class="hero-phrase-wrap" id="heroPhraseWrap"></div>
@@ -81,6 +82,9 @@
       <div class="hero-btns">
         <a href="#service-selection" class="btn btn-white btn-lg">
           <i class="fa-solid fa-grid-2"></i> Select a Service
+        </a>
+        <a href="https://wa.me/14155238886?text=Hello%2C+CampAlly" target="_blank" rel="noopener" class="btn btn-whatsapp btn-lg">
+          <i class="fa-brands fa-whatsapp"></i> Chat on WhatsApp
         </a>
         <a href="#city-map" class="btn btn-ghost-white btn-lg">
           <i class="fa-solid fa-map-location-dot"></i> View Live Map
@@ -107,26 +111,26 @@
     </div>
 
     <div class="sel-cards">
-      <a href="/parking" class="sel-card parking reveal d1">
+      <div class="sel-card parking reveal d1" data-service="parking" role="button" tabindex="0">
         <div class="sel-icon"><i class="fa-solid fa-square-parking"></i></div>
         <h3>Smart Parking</h3>
         <p>Find, navigate to, and reserve parking in real time across all 12 zones of the campus.</p>
         <span class="sel-arrow"><i class="fa-solid fa-arrow-right"></i> Find Parking</span>
-      </a>
+      </div>
 
-      <a href="/emergency" class="sel-card emergency reveal d2">
+      <div class="sel-card emergency reveal d2" data-service="emergency" role="button" tabindex="0">
         <div class="sel-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
         <h3>Emergency Response</h3>
         <p>Report an incident or medical emergency. Responders dispatched in under 90 seconds.</p>
         <span class="sel-arrow"><i class="fa-solid fa-arrow-right"></i> Report Now</span>
-      </a>
+      </div>
 
-      <a href="/lost-person" class="sel-card lost reveal d3">
+      <div class="sel-card lost reveal d3" data-service="lost" role="button" tabindex="0">
         <div class="sel-icon"><i class="fa-solid fa-person-circle-question"></i></div>
         <h3>Lost Person Recovery</h3>
         <p>Report or search for a missing person. Powered by RFID wristbands and crowd-data.</p>
         <span class="sel-arrow"><i class="fa-solid fa-arrow-right"></i> Start Search</span>
-      </a>
+      </div>
     </div>
 
     <div class="sel-note reveal">
@@ -640,6 +644,16 @@
     </div>
   </div>
 </footer>
+
+<!-- ═══════════════════════════════════ SERVICE MODAL ═══════════════════════════════════ -->
+<div id="serviceModal" class="svc-overlay" role="dialog" aria-modal="true" aria-labelledby="modalTitle" hidden>
+  <div class="svc-modal">
+    <button class="svc-close" id="modalClose" aria-label="Close dialog">
+      <i class="fa-solid fa-xmark"></i>
+    </button>
+    <div id="modalContent"></div>
+  </div>
+</div>
 
 <script src="{% static 'js/index.js' %}"></script>
 </body>

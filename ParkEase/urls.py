@@ -13,7 +13,10 @@ urlpatterns = [
     path('security/', include(security_urlpatterns)),
     path('emergency/', landing_views.emergency_page, name='emergency_page'),
     path('emergency_dashboard/', landing_views.emergency_dashboard, name='emergency_dashboard'),
-    path('lost-person/', landing_views.lost_found, name='lost_person')
+    path('lost-person/', landing_views.lost_found, name='lost_person'),
+
+    # WhatsApp (Twilio) inbound webhook
+    path('whatsapp/webhook/', landing_views.whatsapp_webhook, name='whatsapp_webhook'),
 ]
 
 if settings.DEBUG:

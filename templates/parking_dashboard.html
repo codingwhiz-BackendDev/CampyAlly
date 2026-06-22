@@ -15,6 +15,137 @@
 
     <link rel="stylesheet" href="{% static 'css/index.css' %}">
     <link rel="stylesheet" href="{% static 'css/parking.css' %}">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        /* ── Camp Overview Map ───────────────────────────────────────────── */
+        .camp-map-section {
+            margin-bottom: 32px;
+            border-radius: 20px;
+            overflow: hidden;
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            box-shadow: 0 8px 40px rgba(0,0,0,0.3);
+        }
+        .camp-map-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 22px;
+            background: linear-gradient(135deg, rgba(16,185,129,0.08), rgba(6,182,212,0.08));
+            border-bottom: 1px solid rgba(16,185,129,0.15);
+        }
+        .camp-map-header-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .camp-map-title {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 15px;
+            font-weight: 700;
+            color: #e2e8f0;
+        }
+        .camp-map-sub {
+            font-size: 12px;
+            color: #64748b;
+            margin-top: 2px;
+        }
+        #camp-map {
+            height: 520px;
+            width: 100%;
+            background: #0f172a;
+        }
+        /* ── POI Filter Bar ──────────────────────────────────────────────── */
+        .poi-filter-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            padding: 12px 22px;
+            background: rgba(15,23,42,0.6);
+            border-bottom: 1px solid rgba(16,185,129,0.1);
+        }
+        .poi-filter-btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            border-radius: 20px;
+            border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(255,255,255,0.05);
+            color: #94a3b8;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: 'DM Sans', sans-serif;
+        }
+        .poi-filter-btn.active {
+            border-color: var(--cat-color, #10b981);
+            background: color-mix(in srgb, var(--cat-color, #10b981) 15%, transparent);
+            color: var(--cat-color, #10b981);
+        }
+        .poi-filter-btn:hover { opacity: 0.85; }
+        .map-loading {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%,-50%);
+            background: rgba(15,23,42,0.9);
+            color: #94a3b8;
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-size: 13px;
+            z-index: 1000;
+            pointer-events: none;
+        }
+        /* Leaflet popup customisation */
+        .leaflet-popup-content-wrapper {
+            background: #1e293b;
+            border: 1px solid rgba(16,185,129,0.3);
+            border-radius: 12px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+        }
+        .leaflet-popup-tip { background: #1e293b; }
+        .leaflet-popup-content { margin: 14px 16px; min-width: 180px; }
+        .map-popup-name {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 14px;
+            font-weight: 700;
+            color: #e2e8f0;
+            margin-bottom: 8px;
+        }
+        .map-popup-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: #94a3b8;
+            margin-bottom: 4px;
+        }
+        .map-popup-row span:last-child { color: #e2e8f0; font-weight: 600; }
+        .map-popup-avail { color: #10b981 !important; font-size: 18px !important; font-weight: 700 !important; }
+        .map-popup-status {
+            display: inline-block;
+            margin-top: 8px;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+        }
+        .map-popup-status.open     { background: rgba(16,185,129,0.15); color: #10b981; }
+        .map-popup-status.filling  { background: rgba(245,158,11,0.15); color: #f59e0b; }
+        .map-popup-status.full     { background: rgba(239,68,68,0.15);  color: #ef4444; }
+        .map-popup-dir {
+            display: block;
+            margin-top: 10px;
+            padding: 7px 12px;
+            background: linear-gradient(135deg, #10b981, #06b6d4);
+            color: #0a0a1a;
+            text-decoration: none;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 700;
+            text-align: center;
+        }
+    </style>
 
     <style>
         /* ── Enhanced Animations ───────────────────────────────────────── */
@@ -293,6 +424,168 @@
             background: inherit;
             animation: ripple 2s infinite;
         }
+
+        /* ── AI Detection Bar ────────────────────────────────────────────── */
+        .ai-detection-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 24px;
+            padding: 16px 24px;
+            background: linear-gradient(135deg, rgba(139,92,246,0.08), rgba(99,179,237,0.08));
+            border: 1px solid rgba(139,92,246,0.2);
+            border-radius: 16px;
+        }
+        .btn-run-detection {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 13px 26px;
+            background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 700;
+            font-family: 'Space Grotesk', sans-serif;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .btn-run-detection:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 28px rgba(139,92,246,0.5);
+        }
+        .btn-run-detection:disabled { opacity: 0.7; cursor: not-allowed; }
+        .btn-run-detection .spinner {
+            display: none;
+            width: 18px; height: 18px;
+            border: 2px solid rgba(255,255,255,0.35);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: rotate-slow 0.8s linear infinite;
+        }
+        .btn-run-detection.running .spinner { display: block; }
+        .btn-run-detection.running .btn-icon { display: none; }
+        .detection-status { font-size: 13px; color: #94a3b8; }
+        .detection-status strong { color: #c4b5fd; }
+
+        /* ── Decongestion Impact Strip ───────────────────────────────────── */
+        .impact-strip {
+            display: none;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-bottom: 28px;
+            animation: scale-in 0.4s ease-out;
+        }
+        .impact-strip.visible { display: grid; }
+        .impact-chip {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            padding: 16px;
+            background: linear-gradient(135deg, rgba(16,185,129,0.08), rgba(6,182,212,0.08));
+            border: 1px solid rgba(16,185,129,0.2);
+            border-radius: 14px;
+        }
+        .impact-val {
+            font-size: 28px;
+            font-weight: 700;
+            font-family: 'Space Grotesk', sans-serif;
+            background: linear-gradient(135deg, #10b981 0%, #06b6d4 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .impact-label { font-size: 12px; color: #64748b; text-align: center; }
+
+        /* ── AI Vision Panel ─────────────────────────────────────────────── */
+        .ai-vision-panel { display: none; margin-bottom: 32px; animation: slide-in-up 0.5s ease-out; }
+        .ai-vision-panel.visible { display: block; }
+        .ai-vision-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+        .ai-vision-title { font-size: 18px; font-weight: 700; font-family: 'Space Grotesk', sans-serif; color: #e2e8f0; }
+        .ai-badge {
+            padding: 4px 12px;
+            background: linear-gradient(135deg, rgba(139,92,246,0.2), rgba(99,179,237,0.2));
+            border: 1px solid rgba(139,92,246,0.3);
+            border-radius: 20px;
+            font-size: 11px; font-weight: 700; color: #c4b5fd; letter-spacing: 0.05em;
+        }
+        .ai-sim-badge {
+            padding: 4px 12px;
+            background: rgba(245,158,11,0.15);
+            border: 1px solid rgba(245,158,11,0.3);
+            border-radius: 20px;
+            font-size: 11px; font-weight: 700; color: #fbbf24; letter-spacing: 0.05em;
+        }
+        .ai-results-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 14px; }
+        .ai-zone-chip {
+            padding: 14px 16px;
+            background: rgba(15,23,42,0.6);
+            border: 1px solid rgba(255,255,255,0.07);
+            border-radius: 14px;
+            display: flex; flex-direction: column; gap: 6px;
+        }
+        .ai-zone-chip.ai-full  { border-color: rgba(239,68,68,0.3); background: rgba(239,68,68,0.04); }
+        .ai-zone-chip.ai-open  { border-color: rgba(16,185,129,0.2); }
+        .ai-zone-name  { font-size: 13px; font-weight: 700; color: #cbd5e1; font-family: 'Space Grotesk', sans-serif; }
+        .ai-zone-count { font-size: 22px; font-weight: 700; font-family: 'DM Mono', monospace; color: #8b5cf6; }
+        .ai-zone-meta  { font-size: 11px; color: #64748b; }
+        .ai-full-tag { padding: 2px 8px; background: rgba(239,68,68,0.15); border-radius: 6px; font-size: 10px; font-weight: 700; color: #f87171; }
+        .ai-open-tag { padding: 2px 8px; background: rgba(16,185,129,0.15); border-radius: 6px; font-size: 10px; font-weight: 700; color: #34d399; }
+
+        /* ── Smart Redirect Banner ───────────────────────────────────────── */
+        #smart-redirect {
+            display: none;
+            position: fixed;
+            bottom: 24px; right: 24px;
+            z-index: 9998;
+            background: linear-gradient(135deg, rgba(26,26,46,0.97), rgba(15,23,42,0.97));
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(245,158,11,0.35);
+            border-radius: 20px;
+            padding: 20px 24px;
+            min-width: 320px; max-width: 400px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.4), 0 0 40px rgba(245,158,11,0.15);
+            animation: nudge-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .redirect-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+        .redirect-icon {
+            width: 40px; height: 40px; border-radius: 12px;
+            background: rgba(245,158,11,0.15);
+            display: flex; align-items: center; justify-content: center;
+            color: #fbbf24; font-size: 18px; flex-shrink: 0;
+        }
+        .redirect-title { font-size: 14px; font-weight: 700; color: #e2e8f0; font-family: 'Space Grotesk', sans-serif; }
+        .redirect-sub { font-size: 12px; color: #94a3b8; margin-top: 2px; }
+        .redirect-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+        .redirect-item {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 9px 12px;
+            background: rgba(245,158,11,0.07);
+            border: 1px solid rgba(245,158,11,0.15);
+            border-radius: 10px; font-size: 12px;
+        }
+        .redirect-arrow { color: #fbbf24; margin: 0 6px; }
+        .redirect-from { color: #f87171; font-weight: 600; }
+        .redirect-to   { color: #34d399; font-weight: 600; }
+        .redirect-actions { display: flex; gap: 10px; }
+        .redirect-btn-go {
+            flex: 1; padding: 11px 16px;
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: #0a0a1a; border: none; border-radius: 10px;
+            font-weight: 700; font-family: 'Space Grotesk', sans-serif;
+            font-size: 13px; cursor: pointer; text-decoration: none; text-align: center;
+            transition: all 0.3s ease;
+        }
+        .redirect-btn-go:hover { box-shadow: 0 6px 20px rgba(245,158,11,0.4); transform: translateY(-1px); }
+        .redirect-btn-dismiss {
+            padding: 11px 14px; background: transparent; color: #94a3b8;
+            border: 1px solid #334155; border-radius: 10px; font-size: 13px;
+            cursor: pointer; transition: all 0.3s ease;
+        }
+        .redirect-btn-dismiss:hover { color: #e2e8f0; border-color: #475569; }
     </style>
 </head>
 
@@ -394,6 +687,70 @@
                 </style>
             </div>
 
+            <!-- AI Detection Bar -->
+            <div class="ai-detection-bar">
+                <div style="display:flex;align-items:center;gap:14px;">
+                    <button id="run-detection-btn" class="btn-run-detection" onclick="runDetection()">
+                        <span class="spinner"></span>
+                        <i class="fa-solid fa-eye btn-icon"></i>
+                        Run AI Detection
+                    </button>
+                    <div class="detection-status" id="detection-status">
+                        <strong>YOLOv8 Ready</strong> — click to scan all zones live
+                    </div>
+                </div>
+                <div style="font-size:12px;color:#475569;text-align:right;">
+                    <i class="fa-solid fa-microchip" style="color:#8b5cf6;"></i> Powered by YOLO + Claude AI
+                </div>
+            </div>
+
+            <!-- Decongestion Impact Strip (shown after first detection) -->
+            <div class="impact-strip" id="impact-strip">
+                <div class="impact-chip">
+                    <span class="impact-val" id="impact-drivers">0</span>
+                    <span class="impact-label">Drivers Guided</span>
+                </div>
+                <div class="impact-chip">
+                    <span class="impact-val" id="impact-minutes">0</span>
+                    <span class="impact-label">Minutes Saved</span>
+                </div>
+                <div class="impact-chip">
+                    <span class="impact-val" id="impact-queue">—</span>
+                    <span class="impact-label">Queue Reduced</span>
+                </div>
+            </div>
+
+            <!-- Camp Overview Map -->
+            <div class="camp-map-section">
+                <div class="camp-map-header">
+                    <div class="camp-map-header-left">
+                        <i class="fa-solid fa-map-location-dot" style="color:#10b981;font-size:18px;"></i>
+                        <div>
+                            <div class="camp-map-title">Redemption Camp — Live Car Park Map</div>
+                            <div class="camp-map-sub">Lagos-Ibadan Expressway, Ogun State &nbsp;·&nbsp; Click any marker for availability</div>
+                        </div>
+                    </div>
+                    <div style="font-size:12px;color:#475569;">
+                        <i class="fa-solid fa-satellite-dish" style="color:#10b981;"></i> OpenStreetMap
+                    </div>
+                </div>
+                <!-- POI Category Filters -->
+                <div class="poi-filter-bar" id="poi-filter-bar">
+                    <button class="poi-filter-btn active" data-cat="parking"   style="--cat-color:#10b981" onclick="toggleCat('parking')">🅿️ Car Parks</button>
+                    <button class="poi-filter-btn active" data-cat="worship"   style="--cat-color:#8b5cf6" onclick="toggleCat('worship')">⛪ Worship</button>
+                    <button class="poi-filter-btn active" data-cat="medical"   style="--cat-color:#ef4444" onclick="toggleCat('medical')">🏥 Medical</button>
+                    <button class="poi-filter-btn active" data-cat="food"      style="--cat-color:#f59e0b" onclick="toggleCat('food')">🍽 Food</button>
+                    <button class="poi-filter-btn active" data-cat="education" style="--cat-color:#06b6d4" onclick="toggleCat('education')">🏫 Schools</button>
+                    <button class="poi-filter-btn active" data-cat="bank"      style="--cat-color:#3b82f6" onclick="toggleCat('bank')">🏦 Banks/ATMs</button>
+                    <button class="poi-filter-btn active" data-cat="gate"      style="--cat-color:#f97316" onclick="toggleCat('gate')">🚪 Gates</button>
+                    <button class="poi-filter-btn active" data-cat="other"     style="--cat-color:#64748b" onclick="toggleCat('other')">📍 Other</button>
+                </div>
+                <div style="position:relative;">
+                    <div id="camp-map"></div>
+                    <div class="map-loading" id="map-loading">⏳ Loading places inside camp…</div>
+                </div>
+            </div>
+
             <!-- Zones Grid -->
             <div class="zones-grid" id="zones-grid">
                 {% for zone in zones %}
@@ -484,6 +841,19 @@
                 {% endfor %}
             </div>
 
+            <!-- AI Vision Panel (shown after detection) -->
+            <div class="ai-vision-panel" id="ai-vision-panel">
+                <div class="ai-vision-header">
+                    <i class="fa-solid fa-brain" style="color:#8b5cf6;font-size:20px;"></i>
+                    <span class="ai-vision-title">AI Vision — Detection Results</span>
+                    <span class="ai-badge">YOLO v8</span>
+                    <span class="ai-sim-badge" id="sim-badge" style="display:none;">SIMULATED</span>
+                </div>
+                <div class="ai-results-grid" id="ai-results-grid">
+                    <!-- populated by runDetection() JS -->
+                </div>
+            </div>
+
             <div class="dashboard-footer">
                 <div class="footer-info">
                     <i class="fa-solid fa-rotate"></i>
@@ -497,6 +867,341 @@
         </div>
     </section>
 
+    <!-- Smart Redirect Banner (fixed bottom-right, shown when a zone goes FULL) -->
+    <div id="smart-redirect">
+        <div class="redirect-header">
+            <div class="redirect-icon"><i class="fa-solid fa-route"></i></div>
+            <div>
+                <div class="redirect-title">Smart Redirect Active</div>
+                <div class="redirect-sub">AI routing drivers away from full zones</div>
+            </div>
+        </div>
+        <div class="redirect-list" id="redirect-list"></div>
+        <div class="redirect-actions">
+            <a href="#" id="redirect-btn-go" class="redirect-btn-go" target="_blank" rel="noopener">
+                <i class="fa-solid fa-diamond-turn-right"></i> Navigate to Best Zone
+            </a>
+            <button class="redirect-btn-dismiss" onclick="dismissRedirect()">Dismiss</button>
+        </div>
+    </div>
+
+    <!-- Zone geo data for the geofence "near you" nudge (read by parking_dashboard.js) -->
+    <script>const ZONES_GEO = {{ zones_geo|safe }};</script>
     <script src="{% static 'js/parking_dashboard.js' %}"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+    // ── Camp Overview Map ─────────────────────────────────────────────────────
+    (function initCampMap() {
+
+        // Hard boundary — Redemption Camp perimeter
+        const CAMP_BOUNDS = L.latLngBounds([6.7400, 3.4150], [6.8300, 3.4850]);
+        const CAMP_CENTER = [6.7850, 3.4490];
+
+        const map = L.map('camp-map', {
+            center: CAMP_CENTER,
+            zoom: 14,
+            minZoom: 13,
+            maxZoom: 19,
+            maxBounds: CAMP_BOUNDS,
+            maxBoundsViscosity: 1.0,
+            scrollWheelZoom: false,
+        });
+
+        // ── Tile layers ───────────────────────────────────────────────────────
+        const satellite = L.tileLayer(
+            'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+            { maxZoom: 19, attribution: 'Tiles © Esri — Maxar, GeoEye, Earthstar Geographics' }
+        );
+        const placeLabels = L.tileLayer(
+            'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
+            { maxZoom: 19, opacity: 0.9 }
+        );
+        const streets = L.tileLayer(
+            'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+            { maxZoom: 19, attribution: '© OpenStreetMap contributors' }
+        );
+
+        satellite.addTo(map);
+        placeLabels.addTo(map);
+
+        L.control.layers(
+            { '🛰 Satellite': satellite, '🗺 Street Map': streets },
+            { '🏷 Place Labels': placeLabels },
+            { position: 'topright', collapsed: false }
+        ).addTo(map);
+
+        // Camp boundary outline
+        L.rectangle(CAMP_BOUNDS, {
+            color: '#10b981', weight: 2, opacity: 0.4,
+            fillOpacity: 0, dashArray: '6 4',
+        }).addTo(map).bindTooltip('Redemption City Boundary', { sticky: true });
+
+        // ── POI category config ───────────────────────────────────────────────
+        const CATS = {
+            parking:   { color: '#10b981', emoji: '🅿️' },
+            worship:   { color: '#8b5cf6', emoji: '⛪' },
+            medical:   { color: '#ef4444', emoji: '🏥' },
+            food:      { color: '#f59e0b', emoji: '🍽' },
+            education: { color: '#06b6d4', emoji: '🏫' },
+            bank:      { color: '#3b82f6', emoji: '🏦' },
+            gate:      { color: '#f97316', emoji: '🚪' },
+            other:     { color: '#64748b', emoji: '📍' },
+        };
+
+        // active categories state
+        const activeCats = new Set(Object.keys(CATS));
+
+        // layer groups per category so we can show/hide
+        const layerGroups = {};
+        Object.keys(CATS).forEach(cat => {
+            layerGroups[cat] = L.layerGroup().addTo(map);
+        });
+
+        // ── Icon builders ─────────────────────────────────────────────────────
+        function poiIcon(cat, emoji) {
+            const { color } = CATS[cat] || CATS.other;
+            return L.divIcon({
+                html: `<div style="
+                    background:${color};
+                    border:2px solid white;
+                    border-radius:50%;
+                    width:28px;height:28px;
+                    display:flex;align-items:center;justify-content:center;
+                    font-size:13px;
+                    box-shadow:0 2px 6px rgba(0,0,0,0.5);
+                ">${emoji}</div>`,
+                iconSize: [28, 28],
+                iconAnchor: [14, 14],
+                popupAnchor: [0, -16],
+                className: '',
+            });
+        }
+
+        function parkingIcon(status) {
+            const color = status === 'full' ? '#ef4444' : status === 'filling' ? '#f59e0b' : '#10b981';
+            const letter = 'P';
+            return L.divIcon({
+                html: `<svg xmlns="http://www.w3.org/2000/svg" width="36" height="46" viewBox="0 0 36 46">
+                    <path d="M18 0C8.06 0 0 8.06 0 18c0 12.2 16.2 26.3 16.9 26.93a1.5 1.5 0 002.2 0C19.8 44.3 36 30.2 36 18 36 8.06 27.94 0 18 0z" fill="${color}"/>
+                    <circle cx="18" cy="18" r="11" fill="white" opacity="0.95"/>
+                    <text x="18" y="23" text-anchor="middle" font-size="13" font-weight="800" font-family="sans-serif" fill="${color}">${letter}</text>
+                </svg>`,
+                iconSize: [36, 46], iconAnchor: [18, 46], popupAnchor: [0, -48], className: '',
+            });
+        }
+
+        // ── Parking markers (live from DB) ────────────────────────────────────
+        const parkingMarkers = {};
+
+        function buildParkingPopup(zone, available, status) {
+            const lbl = status === 'full' ? 'FULL' : status === 'filling' ? 'Filling Up' : 'Open';
+            return `<div class="map-popup-name">🅿️ ${zone.name}</div>
+                <div class="map-popup-row"><span>Available</span><span class="map-popup-avail">${available}</span></div>
+                <span class="map-popup-status ${status}">${lbl}</span>
+                <a class="map-popup-dir" href="https://www.google.com/maps/dir/?api=1&destination=${zone.lat},${zone.lng}" target="_blank" rel="noopener">↗ Get Directions</a>`;
+        }
+
+        ZONES_GEO.forEach(zone => {
+            if (!zone.has_coords) return;
+            const m = L.marker([zone.lat, zone.lng], { icon: parkingIcon(zone.status) })
+                .bindPopup(buildParkingPopup(zone, zone.available, zone.status));
+            layerGroups.parking.addLayer(m);
+            parkingMarkers[zone.id] = { marker: m, zone };
+        });
+
+        // Live refresh parking every 5 s
+        setInterval(async () => {
+            try {
+                const data = await (await fetch('/parking/api/status/')).json();
+                data.zones.forEach(z => {
+                    const e = parkingMarkers[z.id];
+                    if (!e) return;
+                    e.marker.setIcon(parkingIcon(z.status));
+                    e.marker.setPopupContent(buildParkingPopup(e.zone, z.available, z.status));
+                });
+            } catch (_) {}
+        }, 5000);
+
+        // ── Overpass API — fetch real places inside camp ──────────────────────
+        // Bounding box: south,west,north,east
+        const BBOX = '6.7400,3.4150,6.8300,3.4850';
+
+        function classifyNode(tags) {
+            const a = tags.amenity || '', s = tags.shop || '', t = tags.tourism || '',
+                  l = tags.leisure || '', r = tags.religion || '', b = tags.barrier || '',
+                  hi = tags.highway || '', n = (tags.name || '').toLowerCase();
+            if (a === 'place_of_worship' || r || n.includes('church') || n.includes('auditorium') || n.includes('chapel') || n.includes('arena')) return 'worship';
+            if (a === 'hospital' || a === 'clinic' || a === 'pharmacy' || a === 'doctors') return 'medical';
+            if (a === 'restaurant' || a === 'fast_food' || a === 'cafe' || a === 'food_court' || a === 'canteen' || s === 'supermarket' || s === 'convenience') return 'food';
+            if (a === 'school' || a === 'university' || a === 'college' || a === 'kindergarten' || a === 'library') return 'education';
+            if (a === 'bank' || a === 'atm') return 'bank';
+            if (b === 'gate' || hi === 'motorway_junction' || n.includes('gate') || n.includes('entrance')) return 'gate';
+            return 'other';
+        }
+
+        async function loadPOIs() {
+            const query = `[out:json][timeout:25];
+(
+  node["amenity"](${BBOX});
+  node["shop"](${BBOX});
+  node["tourism"](${BBOX});
+  node["leisure"](${BBOX});
+  node["barrier"="gate"](${BBOX});
+  node["name"](${BBOX});
+);
+out body;`;
+
+            try {
+                const resp = await fetch('https://overpass-api.de/api/interpreter', {
+                    method: 'POST',
+                    body: 'data=' + encodeURIComponent(query),
+                });
+                const data = await resp.json();
+                document.getElementById('map-loading').style.display = 'none';
+
+                let count = 0;
+                data.elements.forEach(el => {
+                    if (!el.lat || !el.lon) return;
+                    const tags = el.tags || {};
+                    const name = tags.name || tags['name:en'] || '';
+                    if (!name) return; // skip unnamed nodes
+
+                    const cat = classifyNode(tags);
+                    const { emoji } = CATS[cat] || CATS.other;
+
+                    const popupHtml = `
+                        <div class="map-popup-name">${emoji} ${name}</div>
+                        ${tags.amenity ? `<div class="map-popup-row"><span>Type</span><span>${tags.amenity.replace(/_/g,' ')}</span></div>` : ''}
+                        ${tags['addr:street'] ? `<div class="map-popup-row"><span>Street</span><span>${tags['addr:street']}</span></div>` : ''}
+                        ${tags.opening_hours ? `<div class="map-popup-row"><span>Hours</span><span>${tags.opening_hours}</span></div>` : ''}
+                        ${tags.phone ? `<div class="map-popup-row"><span>Phone</span><span>${tags.phone}</span></div>` : ''}
+                        <a class="map-popup-dir" href="https://www.google.com/maps/dir/?api=1&destination=${el.lat},${el.lon}" target="_blank" rel="noopener">↗ Get Directions</a>`;
+
+                    const m = L.marker([el.lat, el.lon], { icon: poiIcon(cat, emoji) })
+                        .bindPopup(popupHtml);
+                    layerGroups[cat].addLayer(m);
+                    count++;
+                });
+
+                // Update header count
+                document.querySelector('.camp-map-sub').textContent =
+                    `Lagos-Ibadan Expressway, Ogun State · ${count} places loaded · Click marker for info`;
+
+            } catch (e) {
+                document.getElementById('map-loading').textContent = '⚠️ Could not load places — check your connection';
+                setTimeout(() => document.getElementById('map-loading').style.display = 'none', 3000);
+            }
+        }
+
+        loadPOIs();
+
+        // ── Category toggle ───────────────────────────────────────────────────
+        window.toggleCat = function(cat) {
+            const btn = document.querySelector(`[data-cat="${cat}"]`);
+            if (activeCats.has(cat)) {
+                activeCats.delete(cat);
+                map.removeLayer(layerGroups[cat]);
+                btn.classList.remove('active');
+            } else {
+                activeCats.add(cat);
+                layerGroups[cat].addTo(map);
+                btn.classList.add('active');
+            }
+        };
+
+    })();
+    </script>
+
+    <script>
+    // ── AI Detection ──────────────────────────────────────────────────────────
+    async function runDetection() {
+        const btn    = document.getElementById('run-detection-btn');
+        const status = document.getElementById('detection-status');
+        btn.classList.add('running');
+        btn.disabled = true;
+        status.innerHTML = '<strong style="color:#c4b5fd;">Scanning zones…</strong> YOLO processing video frames';
+
+        try {
+            const resp = await fetch('/parking/api/run-detection/', {
+                method: 'POST',
+                headers: { 'X-CSRFToken': getCsrfToken() },
+            });
+            const data = await resp.json();
+            if (!data.ok) throw new Error('Detection failed');
+
+            const mode = data.simulated ? 'Simulated demo' : 'Live YOLO';
+            status.innerHTML = `<strong style="color:#34d399;">Complete</strong> — ${data.zones.length} zones scanned (${mode})`;
+            document.getElementById('sim-badge').style.display = data.simulated ? '' : 'none';
+
+            // Update zone cards on the dashboard
+            data.zones.forEach(z => {
+                const el = id => document.getElementById(id);
+                if (el(`zone-${z.id}-available`)) el(`zone-${z.id}-available`).textContent = z.available;
+                if (el(`zone-${z.id}-occupied`))  el(`zone-${z.id}-occupied`).textContent  = z.occupied;
+                if (el(`zone-${z.id}-detected`))  el(`zone-${z.id}-detected`).textContent  = z.detected;
+                const bar = el(`zone-${z.id}-bar`);
+                if (bar) bar.style.width = z.percent + '%';
+            });
+
+            // Populate AI Vision panel
+            const grid = document.getElementById('ai-results-grid');
+            grid.innerHTML = data.zones.map(z => `
+                <div class="ai-zone-chip ${z.available === 0 ? 'ai-full' : 'ai-open'}">
+                    <div class="ai-zone-name">${z.name}</div>
+                    <div class="ai-zone-count">${z.detected} <span style="font-size:13px;color:#64748b;">vehicles</span></div>
+                    <div class="ai-zone-meta">${z.available} free / ${z.total} total · ${z.percent}% full</div>
+                    ${z.available === 0
+                        ? '<span class="ai-full-tag">FULL</span>'
+                        : `<span class="ai-open-tag">${z.available} OPEN</span>`}
+                </div>
+            `).join('');
+            document.getElementById('ai-vision-panel').classList.add('visible');
+
+            // Decongestion impact strip
+            const s = data.stats;
+            document.getElementById('impact-drivers').textContent = s.drivers_guided;
+            document.getElementById('impact-minutes').textContent = s.minutes_saved;
+            document.getElementById('impact-queue').textContent   = s.queue_reduced;
+            document.getElementById('impact-strip').classList.add('visible');
+
+            // Smart Redirect banner
+            if (data.redirects && data.redirects.length > 0) {
+                showSmartRedirect(data.redirects);
+            }
+
+        } catch (e) {
+            status.innerHTML = `<strong style="color:#f87171;">Error</strong> — ${e.message}`;
+        } finally {
+            btn.classList.remove('running');
+            btn.disabled = false;
+        }
+    }
+
+    function showSmartRedirect(redirects) {
+        const list = document.getElementById('redirect-list');
+        list.innerHTML = redirects.slice(0, 3).map(r => `
+            <div class="redirect-item">
+                <span class="redirect-from"><i class="fa-solid fa-xmark"></i> ${r.from_zone}</span>
+                <span class="redirect-arrow"><i class="fa-solid fa-arrow-right"></i></span>
+                <span class="redirect-to"><i class="fa-solid fa-check"></i> ${r.to_zone} (${r.to_available} free)</span>
+            </div>
+        `).join('');
+        const best = redirects[0];
+        if (best.maps_url) document.getElementById('redirect-btn-go').href = best.maps_url;
+        document.getElementById('smart-redirect').style.display = 'block';
+    }
+
+    function dismissRedirect() {
+        document.getElementById('smart-redirect').style.display = 'none';
+    }
+
+    function getCsrfToken() {
+        for (const c of document.cookie.split(';')) {
+            const t = c.trim();
+            if (t.startsWith('csrftoken=')) return decodeURIComponent(t.slice(10));
+        }
+        return '';
+    }
+    </script>
 </body>
 </html>

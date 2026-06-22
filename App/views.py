@@ -1,7 +1,9 @@
 import uuid
 import json
+import random
+import math
 from django.shortcuts import render, get_object_or_404, redirect
-from django.http import JsonResponse, HttpResponseBadRequest
+from django.http import JsonResponse, HttpResponseBadRequest, HttpResponse
 from django.views.decorators.http import require_POST, require_GET, require_http_methods
 from django.views.decorators.csrf import csrf_exempt
 from django.utils import timezone
@@ -743,3 +745,319 @@ def api_update_lost_found_status(request, report_id):
         'report': _lost_found_to_dict(report),
         'message': f'Status updated to {report.get_status_display()}',
     })
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# AI Detection API  POST /parking/api/run-detection/
+# Triggers YOLO on a local video file; falls back to simulated detection if
+# ultralytics / video is unavailable (safe for demo without full venv).
+# ─────────────────────────────────────────────────────────────────────────────
+
+_detection_stats = {'drivers_guided': 0, 'minutes_saved': 0}
+
+
+def _haversine_km(lat1, lng1, lat2, lng2):
+    R = 6371
+    dlat = math.radians(lat2 - lat1)
+    dlng = math.radians(lng2 - lng1)
+    a = (math.sin(dlat / 2) ** 2
+         + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2))
+         * math.sin(dlng / 2) ** 2)
+    return R * 2 * math.asin(math.sqrt(a))
+
+
+def _zone_detection_result(zone, detected_count):
+    return {
+        'id':       zone.id,
+        'name':     zone.name,
+        'detected': detected_count,
+        'available': zone.available_count(),
+        'occupied':  zone.occupied_count(),
+        'total':     zone.slots.count(),
+        'percent':   zone.occupancy_percent(),
+        'status':    zone.status,
+        'lat':       zone.latitude,
+        'lng':       zone.longitude,
+    }
+
+
+@csrf_exempt
+@require_POST
+def api_run_detection(request):
+    import os
+
+    BASE_DIR   = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    VIDEO_PATH = os.path.join(BASE_DIR, 'traffic_video.mp4')
+
+    zones    = list(ParkingZone.objects.prefetch_related('slots').all())
+    results  = []
+    simulated = False
+
+    try:
+        from .yolo_detection import YOLOVehicleDetector
+        if not os.path.exists(VIDEO_PATH):
+            raise FileNotFoundError("No demo video file")
+        detector = YOLOVehicleDetector()
+        for zone in zones:
+            if not zone.slots.exists():
+                continue
+            count = detector.process_video_file(
+                video_path=VIDEO_PATH,
+                zone_id=zone.id,
+                sample_frames=8,
+                conf_threshold=0.25,
+            )
+            detector.update_zone_slots(zone_id=zone.id, vehicle_count=count)
+            zone.refresh_from_db()
+            results.append(_zone_detection_result(zone, count))
+
+    except Exception:
+        simulated = True
+        results = []
+        for zone in zones:
+            slots = list(zone.slots.all())
+            if not slots:
+                continue
+            total    = len(slots)
+            detected = random.randint(int(total * 0.35), int(total * 0.95))
+            for i, slot in enumerate(slots):
+                if i < detected:
+                    slot.status           = 'occupied'
+                    slot.detected_vehicles = 1
+                    slot.last_detection_at = timezone.now()
+                else:
+                    slot.status           = 'available'
+                    slot.detected_vehicles = 0
+                slot.save()
+            zone.refresh_from_db()
+            results.append(_zone_detection_result(zone, detected))
+
+    # Smart Redirect — for every FULL zone, find the nearest open zone
+    open_zones = [r for r in results if r['available'] > 0]
+    full_zones  = [r for r in results if r['available'] == 0 and r['total'] > 0]
+    redirects   = []
+
+    for fz in full_zones:
+        if not open_zones:
+            break
+        has_coords = fz['lat'] != 0.0 or fz['lng'] != 0.0
+        if has_coords:
+            def _dist(oz, _fz=fz):
+                if oz['lat'] == 0.0 and oz['lng'] == 0.0:
+                    return float('inf')
+                return _haversine_km(_fz['lat'], _fz['lng'], oz['lat'], oz['lng'])
+            best = min(open_zones, key=_dist)
+        else:
+            best = max(open_zones, key=lambda z: z['available'])
+
+        saved = random.randint(4, 9)
+        _detection_stats['drivers_guided'] += 1
+        _detection_stats['minutes_saved']  += saved
+
+        maps_url = (
+            f"https://www.google.com/maps/dir/?api=1&destination={best['lat']},{best['lng']}"
+            if (best['lat'] != 0.0 or best['lng'] != 0.0) else ''
+        )
+        redirects.append({
+            'from_zone':    fz['name'],
+            'from_id':      fz['id'],
+            'to_zone':      best['name'],
+            'to_id':        best['id'],
+            'to_available': best['available'],
+            'to_lat':       best['lat'],
+            'to_lng':       best['lng'],
+            'maps_url':     maps_url,
+            'minutes_saved': saved,
+        })
+
+    return JsonResponse({
+        'ok':        True,
+        'simulated': simulated,
+        'zones':     results,
+        'redirects': redirects,
+        'stats': {
+            'drivers_guided': _detection_stats['drivers_guided'],
+            'minutes_saved':  _detection_stats['minutes_saved'],
+            'queue_reduced':  f"{min(len(redirects) * 15, 80)}%",
+        },
+        'timestamp': timezone.now().isoformat(),
+    })
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────────
+# WhatsApp webhook  GET+POST /whatsapp/webhook/
+# Meta Cloud API posts inbound messages here as JSON.
+# GET  — webhook verification handshake (Meta calls this once when you register)
+# POST — inbound message event
+# ─────────────────────────────────────────────────────────────────────────────
+
+import os
+import urllib.request as _urllib_req
+import urllib.error  as _urllib_err
+
+
+def _meta_send(phone_number_id: str, access_token: str, to: str, text: str):
+    """Send a WhatsApp text message via Meta Graph API."""
+    url     = f"https://graph.facebook.com/v20.0/{phone_number_id}/messages"
+    payload = json.dumps({
+        "messaging_product": "whatsapp",
+        "to": to,
+        "type": "text",
+        "text": {"body": text},
+    }).encode()
+    req = _urllib_req.Request(
+        url, data=payload,
+        headers={
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {access_token}",
+        },
+    )
+    try:
+        with _urllib_req.urlopen(req, timeout=10) as resp:
+            result = resp.read()
+            _meta_log(f"✅ Sent to {to}")
+            return result
+    except _urllib_err.HTTPError as e:
+        err = e.read().decode()
+        _meta_log(f"❌ SEND FAILED to {to}: {e.code} {err}")
+        return None
+    except Exception as e:
+        _meta_log(f"❌ SEND EXCEPTION to {to}: {e}")
+        return None
+
+
+def _meta_log(msg):
+    import datetime
+    line = f"[{datetime.datetime.now().strftime('%H:%M:%S')}] {msg}\n"
+    print(f"[Meta] {msg}")
+    with open("/tmp/meta_send.log", "a") as f:
+        f.write(line)
+
+
+def _wasender_send(to: str, text: str) -> bool:
+    """Send a WhatsApp message via WaSenderAPI. Returns True on success."""
+    api_key = os.environ.get("WASENDER_API_KEY", "")
+    if not api_key:
+        return False
+    # Strip whatsapp: prefix and leading +
+    phone = to.replace("whatsapp:", "").lstrip("+")
+    payload = json.dumps({"to": phone, "text": text}).encode()
+    req = _urllib_req.Request(
+        "https://www.wasenderapi.com/api/send-message",
+        data=payload,
+        headers={
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {api_key}",
+        },
+    )
+    try:
+        with _urllib_req.urlopen(req, timeout=15) as resp:
+            print(f"[WaSender] ✅ Sent to {phone}")
+            return True
+    except _urllib_err.HTTPError as e:
+        print(f"[WaSender] ❌ {e.code}: {e.read().decode()}")
+        return False
+    except Exception as e:
+        print(f"[WaSender] ❌ {e}")
+        return False
+
+
+def _transcribe_voice(media_url: str, content_type: str) -> str:
+    """Download a Twilio voice note and transcribe it with Groq Whisper."""
+    import base64
+    import tempfile
+    import traceback
+
+    # Download the audio — Twilio media requires Basic auth
+    account_sid = os.environ.get("TWILIO_ACCOUNT_SID", "")
+    auth_token  = os.environ.get("TWILIO_AUTH_TOKEN", "")
+    req = _urllib_req.Request(media_url)
+    if account_sid and auth_token:
+        creds = base64.b64encode(f"{account_sid}:{auth_token}".encode()).decode()
+        req.add_header("Authorization", f"Basic {creds}")
+
+    try:
+        with _urllib_req.urlopen(req, timeout=30) as resp:
+            audio_data = resp.read()
+    except Exception as exc:
+        print(f"[Voice] Download failed: {exc}")
+        return ""
+
+    # Pick a file extension Whisper accepts
+    ext = ".ogg"
+    if "mp4" in content_type:
+        ext = ".mp4"
+    elif "mpeg" in content_type or "mp3" in content_type:
+        ext = ".mp3"
+    elif "wav" in content_type:
+        ext = ".wav"
+
+    tmp_path = None
+    try:
+        with tempfile.NamedTemporaryFile(suffix=ext, delete=False) as tmp:
+            tmp.write(audio_data)
+            tmp_path = tmp.name
+
+        from groq import Groq as _Groq
+        client = _Groq()
+        with open(tmp_path, "rb") as f:
+            result = client.audio.transcriptions.create(
+                model="whisper-large-v3",
+                file=f,
+                response_format="text",
+            )
+        transcript = result if isinstance(result, str) else result.text
+        print(f"[Voice] Transcribed: {transcript!r}")
+        return transcript.strip()
+    except Exception as exc:
+        traceback.print_exc()
+        print(f"[Voice] Transcription failed: {exc}")
+        return ""
+    finally:
+        if tmp_path:
+            try:
+                os.unlink(tmp_path)
+            except Exception:
+                pass
+
+
+@csrf_exempt
+@require_POST
+def whatsapp_webhook(request):
+    """Twilio WhatsApp webhook — receives inbound messages, replies with TwiML."""
+    from xml.sax.saxutils import escape
+    from .whatsapp_agent import run_agent
+
+    from_number  = request.POST.get('From', '')
+    body         = (request.POST.get('Body') or '').strip()
+    media_url    = request.POST.get('MediaUrl0', '')
+    media_type   = request.POST.get('MediaContentType0', '')
+
+    # Voice note — transcribe and use as body
+    if media_url and 'audio' in media_type and not body:
+        transcript = _transcribe_voice(media_url, media_type)
+        if transcript:
+            body = transcript
+        else:
+            body = "I sent a voice message but it could not be transcribed."
+
+    lat = request.POST.get('Latitude')
+    lng = request.POST.get('Longitude')
+    user_lat = float(lat) if lat else None
+    user_lng = float(lng) if lng else None
+    if not body and user_lat is not None:
+        body = "Here is my current location."
+
+    reply = run_agent(from_number, body, user_lat, user_lng)
+
+    # Try WaSender first (bypasses Twilio daily send limit).
+    # If no key or send fails, fall back to TwiML reply via Twilio.
+    if _wasender_send(from_number, reply):
+        return HttpResponse('<Response/>', content_type='application/xml')
+
+    twiml = (
+        '<?xml version="1.0" encoding="UTF-8"?>'
+        f'<Response><Message>{escape(reply)}</Message></Response>'
+    )
+    return HttpResponse(twiml, content_type='application/xml')
