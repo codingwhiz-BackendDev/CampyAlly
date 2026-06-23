@@ -10,6 +10,8 @@ from django.utils import timezone
 from django.db import transaction
 from django.db.models import Count
 from django.contrib import messages
+from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.decorators import login_required
 
 from .models import ParkingZone, ParkingSlot, EmergencyReport, EmergencyTimeline, LostFoundReport
 
@@ -139,9 +141,39 @@ def api_zone_status(request, zone_id):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Security authentication views
+# ─────────────────────────────────────────────────────────────────────────────
+
+def security_login(request):
+    """Login page for security personnel."""
+    if request.method == 'POST':
+        username = request.POST.get('username')
+        password = request.POST.get('password')
+        
+        user = authenticate(request, username=username, password=password)
+        
+        if user is not None:
+            login(request, user)
+            messages.success(request, 'Welcome to the Security Dashboard')
+            return redirect('security_dashboard')
+        else:
+            messages.error(request, 'Invalid credentials. Please try again.')
+    
+    return render(request, 'security_login.html')
+
+
+def security_logout(request):
+    """Logout for security personnel."""
+    logout(request)
+    messages.success(request, 'You have been logged out successfully')
+    return redirect('security_login')
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Security dashboard page  /security/
 # ─────────────────────────────────────────────────────────────────────────────
 
+@login_required(login_url='/security/login/')
 def security_dashboard(request):
     return render(request, 'security_dashboard.html')
 

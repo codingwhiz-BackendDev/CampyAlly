@@ -9,6 +9,8 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('', landing_views.index, name='index'),
     path('parking/', include('App.urls')),
+    path('security/login/', landing_views.security_login, name='security_login'),
+    path('security/logout/', landing_views.security_logout, name='security_logout'),
     path('security/', landing_views.security_dashboard, name='security_dashboard'),
     path('security/', include(security_urlpatterns)),
     path('emergency/', landing_views.emergency_page, name='emergency_page'),

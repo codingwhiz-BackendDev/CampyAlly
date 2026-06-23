@@ -157,6 +157,25 @@ body::before {
 .logo-text { display: flex; flex-direction: column; }
 .logo-main { font-weight: 700; font-size: 1.2rem; color: var(--text-primary); letter-spacing: -0.5px; }
 .logo-sub  { font-size: 0.68rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin-top: -1px; }
+.rccg-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(233, 69, 96, 0.15);
+    border: 1px solid rgba(233, 69, 96, 0.3);
+    border-radius: 12px;
+    padding: 4px 10px;
+    margin-top: 10px;
+    font-size: 10px;
+    color: rgba(255, 255, 255, 0.8);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 600;
+}
+.rccg-badge i {
+    color: #e94560;
+    font-size: 9px;
+}
 
 .sidebar-nav { flex: 1; padding: 20px 12px; display: flex; flex-direction: column; gap: 6px; }
 .nav-item {
@@ -204,6 +223,31 @@ body::before {
 .user-detail { display: flex; flex-direction: column; }
 .user-name { font-weight: 600; font-size: 0.88rem; color: var(--text-primary); }
 .user-role { font-size: 0.72rem; color: var(--text-secondary); margin-top: 1px; }
+.logout-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 16px;
+    padding: 12px 16px;
+    background: linear-gradient(135deg, #e94560 0%, #ff6b6b 100%);
+    border: none;
+    border-radius: var(--radius-sm);
+    color: white;
+    text-decoration: none;
+    font-size: 0.85rem;
+    font-weight: 600;
+    font-family: 'DM Sans', sans-serif;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(233, 69, 96, 0.3);
+}
+.logout-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(233, 69, 96, 0.5);
+    background: linear-gradient(135deg, #ff6b6b 0%, #e94560 100%);
+}
+.logout-btn i {
+    font-size: 0.95rem;
+}
 
 /* ══════════════════════════════════════════════
    MAIN CONTAINER WINDOW
