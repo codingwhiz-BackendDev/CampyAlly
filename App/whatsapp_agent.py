@@ -84,6 +84,39 @@ CLAUDE_TOOLS = [
             "required": ["location_name", "place_type"],
         },
     },
+    {
+        "name": "save_location",
+        "description": (
+            "Save the user's current GPS position or a named place so they can find it later. "
+            "Call this when the user says things like 'save my location', 'remember this spot', "
+            "'save this as my car', 'bookmark this place'. "
+            "Use the lat/lng from ctx if the user just shared their GPS, otherwise use place_name."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "label":      {"type": "string", "description": "Short name for the place, e.g. 'my car', 'prayer tent', 'gate B'"},
+                "place_name": {"type": "string", "description": "Descriptive name if no GPS available"},
+            },
+            "required": ["label"],
+        },
+    },
+    {
+        "name": "get_saved_location",
+        "description": (
+            "Retrieve a previously saved location and return directions. "
+            "Call this when the user says 'take me back', 'I\\'m lost', 'find my saved spot', "
+            "'where did I save', 'where is my car', 'where was I before'. "
+            "If label is empty, list all saved locations."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "label": {"type": "string", "description": "Name of the saved location to retrieve. Leave empty to list all."},
+            },
+            "required": [],
+        },
+    },
 ]
 
 SYSTEM_PROMPT = """You are CampAlly, the WhatsApp assistant for Redemption City \
@@ -159,6 +192,14 @@ charitably — "emergancy", "emergensy", "emrgency" all mean emergency. \
 "hspital", "hosptal" mean hospital. "pak", "pakr", "pakring" mean parking. \
 Never reject a message because of spelling — always understand the intent.
 4. LOST & FOUND — file reports for lost/found people or items.
+5. SAVED LOCATIONS — Users can pin a spot and return to it later. \
+When a user says "save my location", "remember this spot", "save this as [name]", \
+"bookmark this place", call save_location with the label they give \
+(default label: "my spot") and pass their GPS from ctx if available. \
+When a user says "take me back", "I'm lost", "find my saved spot", \
+"where did I save", "where is my [name]", "take me to my car" etc., \
+call get_saved_location with the label. If no label is mentioned, \
+call get_saved_location with an empty label to list all their saved spots.
 
 Rules:
 - Always call a tool to get live data. NEVER invent places, parking availability, \
@@ -559,6 +600,92 @@ def _tool_report_lost_found(category, title, description,
             f"Keep your phone handy.")
 
 
+def _tool_save_location(label: str, place_name: str, ctx: dict) -> str:
+    import datetime
+    phone = ctx.get("phone")
+    if not phone:
+        return "Could not save — no user session found."
+    wa_user = _get_wa_user(phone)
+    try:
+        locations = json.loads(wa_user.saved_locations or '{}')
+    except Exception:
+        locations = {}
+
+    entry: dict = {"saved_at": datetime.datetime.now().isoformat()}
+    lat, lng = ctx.get("lat"), ctx.get("lng")
+    if lat is not None and lng is not None:
+        entry["lat"]       = lat
+        entry["lng"]       = lng
+        entry["maps_link"] = f"https://maps.google.com/?q={lat},{lng}"
+    if place_name:
+        entry["place_name"] = place_name
+
+    key = label.lower().strip()
+    locations[key] = entry
+    wa_user.saved_locations = json.dumps(locations)
+    wa_user.save(update_fields=["saved_locations"])
+
+    if lat is not None and lng is not None:
+        return (f"✅ Got it! I've saved *{label}* with your exact GPS location.\n"
+                f"Just say 'take me back to {label}' whenever you need it.")
+    elif place_name:
+        return (f"✅ Saved *{label}* as '{place_name}'.\n"
+                f"Say 'take me back to {label}' to get directions later.")
+    else:
+        return f"✅ Saved *{label}*. Share your 📍 GPS next time for precise directions."
+
+
+def _tool_get_saved_location(label: str, ctx: dict) -> str:
+    phone = ctx.get("phone")
+    if not phone:
+        return "Could not retrieve — no user session found."
+    wa_user = _get_wa_user(phone)
+    try:
+        locations = json.loads(wa_user.saved_locations or '{}')
+    except Exception:
+        locations = {}
+
+    if not locations:
+        return ("You haven't saved any locations yet.\n"
+                "Share your 📍 GPS location and say *save this as [name]* "
+                "to bookmark a spot.")
+
+    # List all if no label given
+    if not label:
+        lines = ["📍 *Your saved locations:*"]
+        for k, v in locations.items():
+            if v.get("maps_link"):
+                lines.append(f"• *{k}* → {v['maps_link']}")
+            elif v.get("place_name"):
+                lines.append(f"• *{k}* → {v['place_name']}")
+            else:
+                lines.append(f"• *{k}*")
+        return "\n".join(lines)
+
+    # Find by label (exact, then partial)
+    key = label.lower().strip()
+    entry = locations.get(key)
+    if not entry:
+        for k, v in locations.items():
+            if key in k or k in key:
+                entry, key = v, k
+                break
+
+    if not entry:
+        saved = ", ".join(f"*{k}*" for k in locations)
+        return f"I couldn't find a saved location called '{label}'.\nYour saved spots: {saved}"
+
+    lines = [f"📍 *{key.title()}* — here's where you were:"]
+    if entry.get("place_name"):
+        lines.append(f"Place: {entry['place_name']}")
+    if entry.get("maps_link"):
+        lines.append(f"🗺️ Tap to navigate: {entry['maps_link']}")
+    elif entry.get("lat") and entry.get("lng"):
+        lines.append(f"Coordinates: {entry['lat']:.5f}, {entry['lng']:.5f}")
+    lines.append("Stay safe and follow the signs! 🏕️")
+    return "\n".join(lines)
+
+
 def _execute_tool(name, tool_input, ctx) -> str:
     try:
         if name == "save_user_name":
@@ -590,6 +717,17 @@ def _execute_tool(name, tool_input, ctx) -> str:
                 tool_input.get("location_name", ""),
                 tool_input.get("place_type", ""),
                 tool_input.get("radius_m", 1000),
+            )
+        if name == "save_location":
+            return _tool_save_location(
+                tool_input.get("label", "my spot"),
+                tool_input.get("place_name", ""),
+                ctx,
+            )
+        if name == "get_saved_location":
+            return _tool_get_saved_location(
+                tool_input.get("label", ""),
+                ctx,
             )
         return f"Unknown tool: {name}"
     except Exception as exc:
@@ -684,8 +822,10 @@ def run_agent(user_phone, body, user_lat=None, user_lng=None) -> str:
     wa_user = _get_wa_user(phone)
     history = _load_conversation(wa_user)
 
-    # Location share: bypass LLM and return nearest car park directly
-    if user_lat is not None and user_lng is not None:
+    # Location share: bypass LLM for parking only; let LLM handle "save" intent
+    _save_keywords = ("save", "remember", "bookmark", "pin", "keep", "mark")
+    _wants_save = any(w in (body or "").lower() for w in _save_keywords)
+    if user_lat is not None and user_lng is not None and not _wants_save:
         direct = _tool_find_nearest_open_zone(user_lat, user_lng)
         history.append({"role": "user",      "content": body or "Here is my location."})
         history.append({"role": "assistant", "content": direct})

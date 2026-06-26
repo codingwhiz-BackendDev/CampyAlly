@@ -313,7 +313,8 @@ class WhatsAppUser(models.Model):
     first_seen      = models.DateTimeField(auto_now_add=True)
     last_seen       = models.DateTimeField(auto_now=True)
     message_count   = models.PositiveIntegerField(default=0)
-    conversation    = models.TextField(default='[]')  # JSON list of {role, content}
+    conversation    = models.TextField(default='[]')   # JSON list of {role, content}
+    saved_locations = models.TextField(default='{}')   # JSON dict of {label: {lat, lng, place_name, saved_at}}
 
     def __str__(self):
         return f"{self.name or 'Unknown'} ({self.phone})"
