@@ -234,6 +234,11 @@ canvas { display: block; }
 .hero-video-wrap video {
   width: 100%; height: 100%; object-fit: cover;
   animation: video-ken-burns 18s ease-in-out infinite alternate;
+  transition: filter .6s ease, opacity .6s ease;
+}
+#hero:hover .hero-video-wrap video {
+  filter: brightness(.45);
+  opacity: .85;
 }
 /* Dark gradient overlays — bottom heavy so text pops */
 .hero-video-wrap::before {
@@ -281,10 +286,11 @@ canvas { display: block; }
 .hero-content {
   position: relative; z-index: 20;
   flex: 1; display: flex; flex-direction: column;
-  justify-content: center; align-items: flex-start;
+  justify-content: center; align-items: center;
   padding-top: 0;
+  text-align: center;
 }
-.hero-content .container { width: 100%; position: relative; z-index: 21; padding-top: 80px; }
+.hero-content .container { width: 100%; position: relative; z-index: 21; padding-top: 80px; display: flex; flex-direction: column; align-items: center; }
 
 /* Live badge */
 .hero-badge {
@@ -328,6 +334,7 @@ canvas { display: block; }
   line-height: 1.65;
   max-width: 560px;
   margin-bottom: 28px;
+  text-align: center;
   animation: fadeUp .9s .22s var(--ease-out) both;
 }
 

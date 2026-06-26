@@ -20,17 +20,20 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-7m$7nd9zdrok415qqxemg59eei3bkksvct1lket=-5(qx_f8t9'
+import os
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-7m$7nd9zdrok415qqxemg59eei3bkksvct1lket=-5(qx_f8t9')
 
-# '*' lets Twilio reach the webhook through an ngrok tunnel during the demo.
-# Lock this down to your real host before any production use.
+DEBUG = os.environ.get('DEBUG', 'True') == 'True'
+
 ALLOWED_HOSTS = ['*']
 
-# Allow Twilio/ngrok POSTs (e.g. the WhatsApp webhook) through CSRF host checks.
-CSRF_TRUSTED_ORIGINS = ['https://*.ngrok-free.app', 'https://*.ngrok.io']
+CSRF_TRUSTED_ORIGINS = [
+    'https://*.ngrok-free.app',
+    'https://*.ngrok.io',
+    'https://*.railway.app',
+    'https://*.up.railway.app',
+]
 
 
 # Application definition

@@ -17,8 +17,11 @@ urlpatterns = [
     path('emergency_dashboard/', landing_views.emergency_dashboard, name='emergency_dashboard'),
     path('lost-person/', landing_views.lost_found, name='lost_person'),
 
-    # WhatsApp (Twilio) inbound webhook
+    # WhatsApp — Twilio (legacy)
     path('whatsapp/webhook/', landing_views.whatsapp_webhook, name='whatsapp_webhook'),
+
+    # WhatsApp — Meta Cloud API (primary)
+    path('whatsapp/meta/', landing_views.meta_whatsapp_webhook, name='meta_whatsapp_webhook'),
 ]
 
 if settings.DEBUG:

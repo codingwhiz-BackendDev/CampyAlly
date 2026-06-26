@@ -1093,3 +1093,112 @@ def whatsapp_webhook(request):
         f'<Response><Message>{escape(reply)}</Message></Response>'
     )
     return HttpResponse(twiml, content_type='application/xml')
+
+
+def _transcribe_meta_voice(media_id: str, access_token: str, mime_type: str) -> str:
+    """Download a Meta Cloud API voice note by media_id and transcribe with Groq Whisper."""
+    import tempfile, traceback
+
+    # Step 1 — resolve the download URL
+    try:
+        url_req = _urllib_req.Request(
+            f"https://graph.facebook.com/v20.0/{media_id}",
+            headers={"Authorization": f"Bearer {access_token}"},
+        )
+        with _urllib_req.urlopen(url_req, timeout=10) as resp:
+            media_info = json.loads(resp.read())
+            download_url = media_info.get('url', '')
+    except Exception as e:
+        _meta_log(f"❌ Meta media URL fetch failed: {e}")
+        return ""
+
+    # Step 2 — download the audio bytes
+    try:
+        dl_req = _urllib_req.Request(
+            download_url,
+            headers={"Authorization": f"Bearer {access_token}"},
+        )
+        with _urllib_req.urlopen(dl_req, timeout=30) as resp:
+            audio_data = resp.read()
+    except Exception as e:
+        _meta_log(f"❌ Meta audio download failed: {e}")
+        return ""
+
+    # Step 3 — transcribe via Groq Whisper
+    ext = ".mp4" if "mp4" in mime_type else ".mp3" if ("mp3" in mime_type or "mpeg" in mime_type) else ".wav" if "wav" in mime_type else ".ogg"
+    tmp_path = None
+    try:
+        with tempfile.NamedTemporaryFile(suffix=ext, delete=False) as tmp:
+            tmp.write(audio_data)
+            tmp_path = tmp.name
+        from groq import Groq as _Groq
+        with open(tmp_path, "rb") as f:
+            result = _Groq().audio.transcriptions.create(model="whisper-large-v3", file=f, response_format="text")
+        transcript = result if isinstance(result, str) else result.text
+        _meta_log(f"🎤 Transcribed: {transcript!r}")
+        return transcript.strip()
+    except Exception as e:
+        traceback.print_exc()
+        _meta_log(f"❌ Meta transcription failed: {e}")
+        return ""
+    finally:
+        if tmp_path:
+            try: os.unlink(tmp_path)
+            except Exception: pass
+
+
+@csrf_exempt
+def meta_whatsapp_webhook(request):
+    """Meta Cloud API WhatsApp webhook — GET for verification, POST for inbound messages."""
+    from .whatsapp_agent import run_agent
+
+    verify_token   = os.environ.get('META_WEBHOOK_VERIFY_TOKEN', 'campally_verify')
+    phone_number_id = os.environ.get('META_PHONE_NUMBER_ID', '')
+    access_token   = os.environ.get('META_ACCESS_TOKEN', '')
+
+    # ── Verification handshake ────────────────────────────────────────────────
+    if request.method == 'GET':
+        if (request.GET.get('hub.mode') == 'subscribe'
+                and request.GET.get('hub.verify_token') == verify_token):
+            return HttpResponse(request.GET.get('hub.challenge', ''), content_type='text/plain')
+        return HttpResponse('Forbidden', status=403)
+
+    # ── Inbound message ───────────────────────────────────────────────────────
+    if request.method != 'POST':
+        return HttpResponse('Method Not Allowed', status=405)
+
+    try:
+        data    = json.loads(request.body)
+        msg     = data['entry'][0]['changes'][0]['value']['messages'][0]
+        from_no = msg.get('from', '')       # e.g. "2348012345678"
+        mtype   = msg.get('type', 'text')
+
+        body     = ''
+        user_lat = None
+        user_lng = None
+
+        if mtype == 'text':
+            body = msg.get('text', {}).get('body', '').strip()
+
+        elif mtype == 'audio':
+            media_id  = msg.get('audio', {}).get('id', '')
+            mime_type = msg.get('audio', {}).get('mime_type', 'audio/ogg')
+            body = (_transcribe_meta_voice(media_id, access_token, mime_type)
+                    or "I sent a voice message but it could not be transcribed.")
+
+        elif mtype == 'location':
+            loc      = msg.get('location', {})
+            user_lat = loc.get('latitude')
+            user_lng = loc.get('longitude')
+            body     = "Here is my current location."
+
+        if body:
+            reply = run_agent(from_no, body, user_lat, user_lng)
+            _meta_send(phone_number_id, access_token, from_no, reply)
+
+    except (KeyError, IndexError):
+        pass  # status update or non-message event — ignore
+    except Exception as e:
+        _meta_log(f"❌ Webhook error: {e}")
+
+    return HttpResponse('OK', status=200)
