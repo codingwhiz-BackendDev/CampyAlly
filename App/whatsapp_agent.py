@@ -1,17 +1,6 @@
 """
 WhatsApp AI agent for CampAlly.
-
-Lets worshippers/visitors at Redemption City talk to the smart-parking and
-safety system over WhatsApp instead of the web dashboard. Powered by Groq
-(Llama 3.3 70B) with tool use — the model decides which tool to call, the
-tools query the live Django database (parking occupancy updated by the YOLO
-detector), and the model replies in plain WhatsApp-friendly text.
-
-Wired to Twilio's WhatsApp webhook — see App/views.whatsapp_webhook.
-
-Setup:
-    pip install groq
-    export GROQ_API_KEY=gsk_...   # free at console.groq.com
+Powered by Claude (Anthropic) with Groq as fallback.
 """
 
 import json
@@ -19,10 +8,10 @@ import math
 import traceback
 import urllib.request
 import urllib.parse
-
 import os
-from groq import Groq, BadRequestError as _BadRequest, RateLimitError as _RateLimitError
-from openai import OpenAI as _OpenAI
+
+import anthropic as _anthropic
+from groq import Groq as _Groq, BadRequestError as _BadRequest, RateLimitError as _RateLimitError
 
 from .models import (
     ParkingZone,
@@ -31,7 +20,70 @@ from .models import (
     LostFoundReport,
 )
 
-MODEL = "llama-3.3-70b-versatile"
+CLAUDE_MODEL = "claude-sonnet-4-6"
+GROQ_MODEL   = "llama-3.3-70b-versatile"
+
+# Anthropic tool schema (input_schema instead of parameters)
+CLAUDE_TOOLS = [
+    {
+        "name": "get_available_parking",
+        "description": "List the camp's car parks with how many spots are free right now.",
+        "input_schema": {"type": "object", "properties": {}, "required": []},
+    },
+    {
+        "name": "find_nearest_open_zone",
+        "description": "Find the closest open car park to the user's shared WhatsApp location.",
+        "input_schema": {"type": "object", "properties": {}, "required": []},
+    },
+    {
+        "name": "report_emergency",
+        "description": "File an emergency report so security/medics are alerted on the dashboard.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "emergency_type": {"type": "string", "enum": ["medical","fire","security","missing","traffic","stampede","other"]},
+                "description":    {"type": "string"},
+                "location_name":  {"type": "string"},
+            },
+            "required": ["emergency_type", "description"],
+        },
+    },
+    {
+        "name": "report_lost_found",
+        "description": "File a lost or found person/item report.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "category":    {"type": "string", "enum": ["lost_person","found_person","lost_item","found_item"]},
+                "title":       {"type": "string"},
+                "description": {"type": "string"},
+                "location":    {"type": "string"},
+            },
+            "required": ["category", "title", "description"],
+        },
+    },
+    {
+        "name": "save_user_name",
+        "description": "Save the user's name. Call as soon as the user tells you their name.",
+        "input_schema": {
+            "type": "object",
+            "properties": {"name": {"type": "string"}},
+            "required": ["name"],
+        },
+    },
+    {
+        "name": "find_nearby_places",
+        "description": "Find hotels, restaurants, hospitals, ATMs etc. near a camp landmark.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "location_name": {"type": "string"},
+                "place_type":    {"type": "string"},
+            },
+            "required": ["location_name", "place_type"],
+        },
+    },
+]
 
 SYSTEM_PROMPT = """You are CampAlly, the WhatsApp assistant for Redemption City \
 (the Redeemed Christian Church of God camp on the Lagos-Ibadan Expressway).
@@ -514,69 +566,87 @@ def _execute_tool(name, tool_input, ctx) -> str:
 
 # ── Main entry point ─────────────────────────────────────────────────────────
 
-def _providers():
-    """Yield (client, model) — Groq first, Cerebras as fallback."""
-    yield Groq(), MODEL
-    cerebras_key = os.environ.get("CEREBRAS_API_KEY", "")
-    if cerebras_key:
-        yield (_OpenAI(api_key=cerebras_key, base_url="https://api.cerebras.ai/v1/"),
-               "llama3.1-8b")
+def _run_claude(messages, system_prompt, ctx) -> str:
+    """Run Claude with tool use. Returns the final text reply."""
+    client = _anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY", ""))
+    for _ in range(6):
+        resp = client.messages.create(
+            model=CLAUDE_MODEL,
+            max_tokens=1024,
+            system=system_prompt,
+            tools=CLAUDE_TOOLS,
+            messages=messages,
+        )
+        if resp.stop_reason == "tool_use":
+            # Add assistant turn with all content blocks
+            messages.append({
+                "role": "assistant",
+                "content": [
+                    {"type": b.type, "id": b.id, "name": b.name, "input": b.input}
+                    if b.type == "tool_use"
+                    else {"type": "text", "text": b.text}
+                    for b in resp.content
+                ],
+            })
+            # Run each tool and collect results
+            results = []
+            for b in resp.content:
+                if b.type == "tool_use":
+                    result = _execute_tool(b.name, b.input, ctx)
+                    results.append({"type": "tool_result", "tool_use_id": b.id, "content": result})
+            messages.append({"role": "user", "content": results})
+            continue
+
+        text_blocks = [b for b in resp.content if b.type == "text"]
+        return " ".join(b.text for b in text_blocks).strip()
+    return ""
 
 
-def _run_loop(client, model, messages, ctx) -> str:
-    """Run the tool-calling loop for one provider. Raises on rate-limit."""
-    final_text = ""
+def _run_groq_fallback(messages, system_prompt, ctx) -> str:
+    """Groq fallback using OpenAI-compat format."""
+    client = _Groq()
+    groq_messages = [{"role": "system", "content": system_prompt}] + messages
     for _ in range(6):
         try:
             resp = client.chat.completions.create(
-                model=model, max_tokens=1024, tools=TOOLS, messages=messages,
+                model=GROQ_MODEL, max_tokens=1024, tools=TOOLS, messages=groq_messages,
             )
         except _BadRequest:
-            # Model wrapped its reply in <function=…> markup — retry with no tools
             fallback = client.chat.completions.create(
-                model=model, max_tokens=1024, messages=messages,
+                model=GROQ_MODEL, max_tokens=1024, messages=groq_messages,
             )
-            final_text = (fallback.choices[0].message.content or "").strip()
-            break
+            return (fallback.choices[0].message.content or "").strip()
 
         choice = resp.choices[0]
-
         if choice.finish_reason == "tool_calls":
             assistant_msg = choice.message
-            messages.append({
+            groq_messages.append({
                 "role": "assistant",
                 "content": assistant_msg.content,
                 "tool_calls": [
                     {"id": tc.id, "type": "function",
-                     "function": {"name": tc.function.name,
-                                  "arguments": tc.function.arguments}}
+                     "function": {"name": tc.function.name, "arguments": tc.function.arguments}}
                     for tc in assistant_msg.tool_calls
                 ],
             })
             for tc in assistant_msg.tool_calls:
-                tool_input = json.loads(tc.function.arguments)
-                result = _execute_tool(tc.function.name, tool_input, ctx)
-                messages.append({
-                    "role": "tool",
-                    "tool_call_id": tc.id,
-                    "content": result,
-                })
+                result = _execute_tool(tc.function.name, json.loads(tc.function.arguments), ctx)
+                groq_messages.append({"role": "tool", "tool_call_id": tc.id, "content": result})
             continue
 
-        final_text = (choice.message.content or "").strip()
-        break
-    return final_text
+        return (choice.message.content or "").strip()
+    return ""
 
 
 def run_agent(user_phone, body, user_lat=None, user_lng=None) -> str:
-    """Run one WhatsApp turn — Groq primary, Cerebras fallback on rate-limit."""
+    """Run one WhatsApp turn — Claude primary, Groq fallback."""
     ctx = {
         "phone": (user_phone or "").replace("whatsapp:", ""),
         "lat": user_lat,
         "lng": user_lng,
     }
 
-    # Location share: bypass LLM and return nearest car park directly.
+    # Location share: return nearest car park directly without LLM
     if user_lat is not None and user_lng is not None:
         direct = _tool_find_nearest_open_zone(user_lat, user_lng)
         history = list(_conversations.get(user_phone, []))
@@ -586,38 +656,45 @@ def run_agent(user_phone, body, user_lat=None, user_lng=None) -> str:
         return direct
 
     history = list(_conversations.get(user_phone, []))
-    history.append({"role": "user", "content": body or "Hi"})
-
-    profile = _user_profiles.get(ctx["phone"], {})
+    profile  = _user_profiles.get(ctx["phone"], {})
     known_name = profile.get("name", "")
-    name_note = (f"\n\n[System note: This user's name is *{known_name}*. "
-                 f"Use their name warmly in replies.]") if known_name else ""
-    messages = [{"role": "system", "content": SYSTEM_PROMPT + name_note}] + list(history)
+    name_note  = (f"\n\n[System note: This user's name is *{known_name}*. "
+                  f"Use their name warmly in replies.]") if known_name else ""
+    system_prompt = SYSTEM_PROMPT + name_note
+
+    # Build simple message list (Claude format — no system message in array)
+    messages = list(history) + [{"role": "user", "content": body or "Hi"}]
 
     final_text = ""
     try:
-        for client, model in _providers():
-            try:
-                final_text = _run_loop(client, model, messages, ctx)
-                break
-            except _RateLimitError:
-                print(f"[CampAlly] Rate limit on {model}, switching provider...")
-                continue
+        final_text = _run_claude(messages, system_prompt, ctx)
+        print(f"[CampAlly] Claude replied ({len(final_text)} chars)")
     except Exception as e:
-        import datetime
-        err = traceback.format_exc()
-        traceback.print_exc()
+        print(f"[CampAlly] Claude failed: {e} — trying Groq fallback")
         try:
-            with open("/tmp/campally_errors.log", "a") as f:
-                f.write(f"\n{'='*60}\n{datetime.datetime.now()}\nMSG: {body}\nERR:\n{err}\n")
-        except Exception:
-            pass
-        return "😕 Something went wrong on my end. Please try again in a moment."
+            # Groq needs simple text history only (no tool-use blocks)
+            groq_history = [{"role": m["role"], "content": m["content"] if isinstance(m["content"], str) else ""}
+                            for m in history if isinstance(m.get("content"), str)]
+            final_text = _run_groq_fallback(
+                groq_history + [{"role": "user", "content": body or "Hi"}],
+                system_prompt, ctx
+            )
+            print(f"[CampAlly] Groq replied ({len(final_text)} chars)")
+        except Exception as e2:
+            import datetime
+            traceback.print_exc()
+            try:
+                with open("/tmp/campally_errors.log", "a") as f:
+                    f.write(f"\n{'='*60}\n{datetime.datetime.now()}\nMSG: {body}\nERR:\n{traceback.format_exc()}\n")
+            except Exception:
+                pass
+            return "😕 Something went wrong on my end. Please try again in a moment."
 
     if not final_text:
         final_text = ("Sorry, I didn't quite catch that. Try *Where can I "
                       "park?*, share your 📍 location, or *Report an emergency*.")
 
+    history.append({"role": "user",      "content": body or "Hi"})
     history.append({"role": "assistant", "content": final_text})
     _conversations[user_phone] = history[-50:]
     return final_text
