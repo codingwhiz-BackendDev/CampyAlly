@@ -216,13 +216,28 @@ finding your way around. How can I help you today?"
 Do NOT answer off-topic questions even partially. Do NOT say "I can't help \
 with that but here's the answer anyway." Simply redirect warmly every time.
 
+LOCATION SHARING:
+When the user shares their WhatsApp location (GPS), a location context note is injected \
+into your system prompt with their exact lat/lng coordinates. When this happens:\
+1. Immediately acknowledge you received their location. Example: "📍 Got your location! Here's what I can help you with:"\
+2. Then offer a quick menu relevant to where they are:\
+   - "🅿️ Find nearest open car park to you"\
+   - "📍 Find places near you (hotel, restaurant, ATM, hospital...)"\
+   - "💾 Save this location for later"\
+   - "🆘 Report an emergency at your location"\
+3. When they pick an option, use their GPS coordinates (available in the location context note) \
+   to call the appropriate tool — do NOT ask for location again since you already have it.\
+4. Always use find_nearest_open_zone with their GPS for parking requests.\
+5. For nearby places, pick the closest camp landmark to their GPS and call find_nearby_places.\
+6. For save location, call save_location — their GPS will be picked up from ctx automatically.\
+7. For emergencies, pre-fill their GPS in the location_name field of report_emergency.\
+
 Rules:
 - Always call a tool to get live data. NEVER invent places, parking availability, \
 zone names, or report numbers.
-- Keep replies short and warm — this is WhatsApp. Use a few emojis. \
-Use *asterisks* for bold (WhatsApp formatting).
-- To find the nearest car park you need the user's location. If you don't have \
-it, ask them to tap the 📎 (attach) button and share their Location.
+- Keep replies short and warm — this is WhatsApp. To find the nearest car park you need the user's location. If you don't have \
+it, ask them to tap the 📎 (attach) button → *Location* → *Send your current location*.\
+ Once they share it, you will receive the GPS coordinates automatically.\
 - For emergencies, follow the 3-step interview above — never skip straight to \
 report_emergency unless the user signals extreme urgency.
 - When a tool returns parking info, ALWAYS include: the car park name, number of \
@@ -984,20 +999,23 @@ def run_agent(user_phone, body, user_lat=None, user_lng=None) -> str:
                 "please share your location again once you're on-site. 🏕️"
             )
 
-    # Location share: bypass LLM for parking only; let LLM handle "save" intent
-    _save_keywords = ("save", "remember", "bookmark", "pin", "keep", "mark")
-    _wants_save = any(w in (body or "").lower() for w in _save_keywords)
-    if user_lat is not None and user_lng is not None and not _wants_save:
-        direct = _tool_find_nearest_open_zone(user_lat, user_lng)
-        history.append({"role": "user",      "content": body or "Here is my location."})
-        history.append({"role": "assistant", "content": direct})
-        _save_conversation(wa_user, history)
-        return direct
-
     known_name = wa_user.name or ""
     name_note  = (f"\n\n[System note: This user's name is *{known_name}*. "
                   f"Use their name warmly in replies.]") if known_name else ""
-    system_prompt = SYSTEM_PROMPT + name_note
+
+    # Inject GPS context into system prompt so LLM can use it for any reply
+    location_note = ""
+    if user_lat is not None and user_lng is not None:
+        location_note = (
+            f"\n\n[Location context: The user has just shared their GPS location — "
+            f"lat={user_lat:.6f}, lng={user_lng:.6f}. "
+            f"You now know exactly where they are inside Redemption City camp. "
+            f"Use this to give precise, location-aware answers: nearest parking, "
+            f"nearby places, emergency location, directions, etc. "
+            f"Always acknowledge that you received their location.]"
+        )
+
+    system_prompt = SYSTEM_PROMPT + name_note + location_note
 
     messages = list(history) + [{"role": "user", "content": body or "Hi"}]
 

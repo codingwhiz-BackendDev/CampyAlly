@@ -1129,6 +1129,28 @@ def baileys_webhook(request):
             reply = run_agent_with_image(phone, body, image_b64, mime_type)
             return JsonResponse({'reply': reply})
 
+        # ── Location share ────────────────────────────────────────
+        if msg_type == 'location':
+            lat = data.get('latitude')
+            lng = data.get('longitude')
+            if lat is None or lng is None:
+                return JsonResponse({'reply': ''})
+            user_lat = float(lat)
+            user_lng = float(lng)
+            # Build a natural body so the LLM understands what happened
+            label    = data.get('label', '')        # optional place label from WhatsApp
+            address  = data.get('address', '')      # optional address string
+            name     = data.get('name', '')         # optional business/place name
+            parts = []
+            if name:    parts.append(name)
+            if address: parts.append(address)
+            if label:   parts.append(f'({label})')
+            location_desc = ', '.join(parts) if parts else f'{user_lat:.5f}, {user_lng:.5f}'
+            body = f'Here is my current location: {location_desc}'
+            print(f'[Baileys] Location from {phone}: lat={user_lat}, lng={user_lng} — {location_desc}')
+            reply = run_agent(phone, body, user_lat, user_lng)
+            return JsonResponse({'reply': reply})
+
         # ── Text ──────────────────────────────────────────────────
         if not body:
             return JsonResponse({'reply': ''})
@@ -1276,7 +1298,16 @@ def meta_whatsapp_webhook(request):
             loc      = msg.get('location', {})
             user_lat = loc.get('latitude')
             user_lng = loc.get('longitude')
-            body     = "Here is my current location."
+            # Enrich body with place name / address when Meta provides them
+            name    = loc.get('name', '')
+            address = loc.get('address', '')
+            parts   = []
+            if name:    parts.append(name)
+            if address: parts.append(address)
+            location_desc = ', '.join(parts) if parts else (
+                f'{user_lat:.5f}, {user_lng:.5f}' if user_lat else 'unknown location'
+            )
+            body = f'Here is my current location: {location_desc}'
 
         if body:
             reply = run_agent(from_no, body, user_lat, user_lng)
