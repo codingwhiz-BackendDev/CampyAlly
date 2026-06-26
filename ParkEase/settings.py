@@ -33,6 +33,10 @@ CSRF_TRUSTED_ORIGINS = [
     'https://*.ngrok.io',
     'https://*.railway.app',
     'https://*.up.railway.app',
+    'http://campally.online',
+    'https://campally.online',
+    'http://www.campally.online',
+    'https://www.campally.online',
 ]
 
 
