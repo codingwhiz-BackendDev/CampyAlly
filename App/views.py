@@ -1060,8 +1060,6 @@ def whatsapp_status(request):
     return HttpResponse('OK', status=200)
 
 
-@csrf_exempt
-@require_POST
 def _transcribe_audio_b64(audio_b64: str, mime_type: str) -> str:
     """Transcribe base64-encoded audio using Groq Whisper."""
     import base64, tempfile, os as _os
@@ -1094,6 +1092,8 @@ def _transcribe_audio_b64(audio_b64: str, mime_type: str) -> str:
             except Exception: pass
 
 
+@csrf_exempt
+@require_POST
 def baileys_webhook(request):
     """Internal endpoint called by the Baileys Node.js bot."""
     from .whatsapp_agent import run_agent, run_agent_with_image
