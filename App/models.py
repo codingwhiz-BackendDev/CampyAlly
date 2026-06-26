@@ -305,3 +305,19 @@ class LostFoundReport(models.Model):
 
     def is_found(self):
         return self.category in ('found_person', 'found_item')
+
+
+class WhatsAppUser(models.Model):
+    phone           = models.CharField(max_length=30, unique=True)
+    name            = models.CharField(max_length=100, blank=True)
+    first_seen      = models.DateTimeField(auto_now_add=True)
+    last_seen       = models.DateTimeField(auto_now=True)
+    message_count   = models.PositiveIntegerField(default=0)
+    conversation    = models.TextField(default='[]')  # JSON list of {role, content}
+
+    def __str__(self):
+        return f"{self.name or 'Unknown'} ({self.phone})"
+
+    class Meta:
+        ordering = ['-last_seen']
+        verbose_name = 'WhatsApp User'

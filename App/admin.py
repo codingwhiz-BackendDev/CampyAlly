@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.utils.html import format_html
 from django.utils import timezone
-from .models import ParkingZone, ParkingSlot, EmergencyReport, EmergencyTimeline, LostFoundReport
+from .models import ParkingZone, ParkingSlot, EmergencyReport, EmergencyTimeline, LostFoundReport, WhatsAppUser
 
 
 # ── Zone admin ────────────────────────────────────────────────────────────────
@@ -161,6 +161,14 @@ class ParkingSlotAdmin(admin.ModelAdmin):
 
 admin.site.register(EmergencyReport)
 admin.site.register(EmergencyTimeline)
+
+
+@admin.register(WhatsAppUser)
+class WhatsAppUserAdmin(admin.ModelAdmin):
+    list_display  = ('phone', 'name', 'message_count', 'first_seen', 'last_seen')
+    search_fields = ('phone', 'name')
+    readonly_fields = ('phone', 'first_seen', 'last_seen', 'message_count', 'conversation')
+    ordering = ('-last_seen',)
 
 
 # ── Lost & Found Admin ─────────────────────────────────────────────────────────

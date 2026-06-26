@@ -18,6 +18,7 @@ from .models import (
     EmergencyReport,
     EmergencyTimeline,
     LostFoundReport,
+    WhatsAppUser,
 )
 
 CLAUDE_MODEL = "claude-sonnet-4-6"
@@ -374,27 +375,39 @@ TOOLS = [
     },
 ]
 
-# In-memory conversation history, keyed by WhatsApp number.
+# In-memory conversation cache (backed by DB on each turn).
 _conversations: dict[str, list] = {}
 
-# User profiles — persisted to disk so names survive Django restarts.
-_PROFILES_PATH = os.path.join(os.path.dirname(__file__), '..', 'user_profiles.json')
+# Rate limiting — track message timestamps per phone number.
+import time as _time
+_rate_timestamps: dict[str, list] = {}
+RATE_LIMIT        = 20   # max messages
+RATE_WINDOW       = 60   # per N seconds
 
-def _load_profiles() -> dict:
+def _is_rate_limited(phone: str) -> bool:
+    now = _time.time()
+    ts  = _rate_timestamps.get(phone, [])
+    ts  = [t for t in ts if now - t < RATE_WINDOW]
+    _rate_timestamps[phone] = ts
+    if len(ts) >= RATE_LIMIT:
+        return True
+    _rate_timestamps[phone].append(now)
+    return False
+
+def _get_wa_user(phone: str) -> "WhatsAppUser":
+    user, _ = WhatsAppUser.objects.get_or_create(phone=phone)
+    return user
+
+def _load_conversation(user: "WhatsAppUser") -> list:
     try:
-        with open(_PROFILES_PATH, 'r') as f:
-            return json.load(f)
+        return json.loads(user.conversation or '[]')
     except Exception:
-        return {}
+        return []
 
-def _save_profiles(profiles: dict):
-    try:
-        with open(_PROFILES_PATH, 'w') as f:
-            json.dump(profiles, f)
-    except Exception as e:
-        print(f'[CampAlly] Could not save profiles: {e}')
-
-_user_profiles: dict[str, dict] = _load_profiles()
+def _save_conversation(user: "WhatsAppUser", history: list):
+    user.conversation = json.dumps(history[-50:])
+    user.message_count += 1
+    user.save(update_fields=['conversation', 'message_count', 'last_seen'])
 
 
 def _haversine_m(lat1, lng1, lat2, lng2):
@@ -551,8 +564,7 @@ def _execute_tool(name, tool_input, ctx) -> str:
         if name == "save_user_name":
             user_name = (tool_input.get("name") or "").strip()
             if user_name and ctx.get("phone"):
-                _user_profiles.setdefault(ctx["phone"], {})["name"] = user_name
-                _save_profiles(_user_profiles)
+                WhatsAppUser.objects.filter(phone=ctx["phone"]).update(name=user_name)
             return f"Name saved: {user_name}"
         if name == "get_available_parking":
             return _tool_get_available_parking()
@@ -661,29 +673,30 @@ def _run_groq_fallback(messages, system_prompt, ctx) -> str:
 
 def run_agent(user_phone, body, user_lat=None, user_lng=None) -> str:
     """Run one WhatsApp turn — Claude primary, Groq fallback."""
-    ctx = {
-        "phone": (user_phone or "").replace("whatsapp:", ""),
-        "lat": user_lat,
-        "lng": user_lng,
-    }
+    phone = (user_phone or "").replace("whatsapp:", "")
+    ctx   = {"phone": phone, "lat": user_lat, "lng": user_lng}
 
-    # Location share: return nearest car park directly without LLM
+    # Rate limit check
+    if _is_rate_limited(phone):
+        return ("⏳ You're sending messages too fast. Please wait a moment and try again.")
+
+    # Load or create the persistent user record
+    wa_user = _get_wa_user(phone)
+    history = _load_conversation(wa_user)
+
+    # Location share: bypass LLM and return nearest car park directly
     if user_lat is not None and user_lng is not None:
         direct = _tool_find_nearest_open_zone(user_lat, user_lng)
-        history = list(_conversations.get(user_phone, []))
-        history.append({"role": "user", "content": body or "Here is my location."})
+        history.append({"role": "user",      "content": body or "Here is my location."})
         history.append({"role": "assistant", "content": direct})
-        _conversations[user_phone] = history[-50:]
+        _save_conversation(wa_user, history)
         return direct
 
-    history = list(_conversations.get(user_phone, []))
-    profile  = _user_profiles.get(ctx["phone"], {})
-    known_name = profile.get("name", "")
+    known_name = wa_user.name or ""
     name_note  = (f"\n\n[System note: This user's name is *{known_name}*. "
                   f"Use their name warmly in replies.]") if known_name else ""
     system_prompt = SYSTEM_PROMPT + name_note
 
-    # Build simple message list (Claude format — no system message in array)
     messages = list(history) + [{"role": "user", "content": body or "Hi"}]
 
     final_text = ""
@@ -693,7 +706,6 @@ def run_agent(user_phone, body, user_lat=None, user_lng=None) -> str:
     except Exception as e:
         print(f"[CampAlly] Claude failed: {e} — trying Groq fallback")
         try:
-            # Groq needs simple text history only (no tool-use blocks)
             groq_history = [{"role": m["role"], "content": m["content"] if isinstance(m["content"], str) else ""}
                             for m in history if isinstance(m.get("content"), str)]
             final_text = _run_groq_fallback(
@@ -701,7 +713,7 @@ def run_agent(user_phone, body, user_lat=None, user_lng=None) -> str:
                 system_prompt, ctx
             )
             print(f"[CampAlly] Groq replied ({len(final_text)} chars)")
-        except Exception as e2:
+        except Exception:
             import datetime
             traceback.print_exc()
             try:
@@ -717,5 +729,5 @@ def run_agent(user_phone, body, user_lat=None, user_lng=None) -> str:
 
     history.append({"role": "user",      "content": body or "Hi"})
     history.append({"role": "assistant", "content": final_text})
-    _conversations[user_phone] = history[-50:]
+    _save_conversation(wa_user, history)
     return final_text
