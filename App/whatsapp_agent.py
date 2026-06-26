@@ -229,7 +229,52 @@ report_emergency unless the user signals extreme urgency.
 free spots, distance, AND the full Google Maps directions link. Never summarise \
 or shorten the tool result — copy it into your reply.
 - Respond ONLY with the final message to send to the user. Do not include your \
-reasoning, planning, or narration of which tools you called."""
+reasoning, planning, or narration of which tools you called.
+
+REDEMPTION CITY HISTORY & KNOWLEDGE:
+Redemption City is the camp ground of the Redeemed Christian Church of God (RCCG), \
+located on the Lagos-Ibadan Expressway, Ogun State, Nigeria — about 40 km north of Lagos.
+
+*Founding & RCCG history:*
+- RCCG was founded in 1952 by Rev. Josiah Olufemi Akindayomi in Lagos after a divine call.
+- After his death in November 1980, Pastor Enoch Adejare Adeboye (Papa GO) became \
+  General Overseer — under him the church grew into one of the largest in the world.
+- The camp ground on the Lagos-Ibadan Expressway was acquired in 1983. What started as \
+  a small bush clearing is now a full city spanning over 16,000 acres (64 km²).
+
+*Key milestones:*
+- 1983 — First Holy Ghost Service held at the campsite under tarpaulins.
+- 1990s — Permanent structures built; camp becomes a recognised address.
+- 1998 — Redeemer's University founded (now in Ede, Osun State).
+- 2000s — New Auditorium built, now one of the largest church auditoriums in the world, \
+  capable of holding over 1 million worshippers under one roof.
+- 2005 — Redemption City officially gazetted as a town with its own postal code.
+- Present — The camp has its own fire service, police post, hospital (Redemption Camp \
+  Hospital), banks, ATMs, hotels, guest houses, restaurants, schools, and shopping areas.
+
+*Major events:*
+- *Monthly Holy Ghost Service* — held every first Friday of the month; draws hundreds \
+  of thousands to millions of worshippers. One of the largest monthly Christian gatherings \
+  on earth.
+- *Annual Holy Ghost Congress* — held every December (usually the first week); the \
+  largest annual Christian gathering in the world, drawing 5–10 million+ attendees.
+- *Youth programs, conventions, and special services* are held throughout the year.
+
+*Key landmarks inside camp:*
+- *New Auditorium (New Arena)* — massive open-sided arena, capacity 1 million+
+- *Old Auditorium (Salvation Ministries area)* — original auditorium, still in use
+- *Car Parks* — A, B, C (Old Auditorium entrance landmark on Expressway), D (National \
+  Youth Centre), F (conventions), V, Odofin Car Park, New Arena Parking
+- *Main Gate* — primary entrance off Lagos-Ibadan Expressway
+- *National Youth Centre* — multi-purpose youth facility near Car Park D
+- *Prayer City / Mountain of Fire* — spiritual prayer area within the camp
+- *Model City* — residential estate for permanent residents
+- *Redemption Camp Hospital* — full medical facility inside the camp
+- *Manna Café* — popular food area
+- *Various hotels and guest houses* — scattered throughout the camp
+
+Use this knowledge to answer any questions visitors have about camp history, \
+events, landmarks, and what to expect."""
 
 # ── Known landmarks inside Redemption Camp ────────────────────────────────────
 # Used to resolve spoken names → GPS coordinates for nearby-places searches.
@@ -907,6 +952,58 @@ def run_agent(user_phone, body, user_lat=None, user_lng=None) -> str:
                       "park?*, share your 📍 location, or *Report an emergency*.")
 
     history.append({"role": "user",      "content": body or "Hi"})
+    history.append({"role": "assistant", "content": final_text})
+    _save_conversation(wa_user, history)
+    return final_text
+
+
+def run_agent_with_image(user_phone: str, caption: str, image_b64: str, mime_type: str) -> str:
+    """Process an image message — uses Claude vision to identify places/things in camp."""
+    phone = (user_phone or "").replace("whatsapp:", "")
+
+    if _is_rate_limited(phone):
+        return "⏳ You're sending messages too fast. Please wait a moment and try again."
+
+    wa_user  = _get_wa_user(phone)
+    history  = _load_conversation(wa_user)
+    known_name = wa_user.name or ""
+    name_note  = (f"\n\n[System note: This user's name is *{known_name}*. "
+                  f"Use their name warmly in replies.]") if known_name else ""
+    system_prompt = SYSTEM_PROMPT + name_note
+
+    # Build image content block for Claude vision
+    user_text = caption or (
+        "I just sent you a photo. Can you identify what or where this is inside "
+        "Redemption City camp? Describe what you see and help me navigate or understand it."
+    )
+    image_content = [
+        {
+            "type": "image",
+            "source": {
+                "type":       "base64",
+                "media_type": mime_type.split(";")[0].strip(),
+                "data":       image_b64,
+            },
+        },
+        {"type": "text", "text": user_text},
+    ]
+
+    messages = list(history) + [{"role": "user", "content": image_content}]
+
+    final_text = ""
+    try:
+        client = _anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY", ""))
+        resp   = client.messages.create(
+            model=CLAUDE_MODEL, max_tokens=1024,
+            system=system_prompt, messages=messages,
+        )
+        final_text = " ".join(b.text for b in resp.content if b.type == "text").strip()
+        print(f"[CampAlly] Vision replied ({len(final_text)} chars)")
+    except Exception as e:
+        print(f"[CampAlly] Vision failed: {e}")
+        final_text = "😕 I had trouble reading that image. Please try again or describe what you see in text."
+
+    history.append({"role": "user",      "content": user_text})
     history.append({"role": "assistant", "content": final_text})
     _save_conversation(wa_user, history)
     return final_text

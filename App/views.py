@@ -1062,17 +1062,79 @@ def whatsapp_status(request):
 
 @csrf_exempt
 @require_POST
+def _transcribe_audio_b64(audio_b64: str, mime_type: str) -> str:
+    """Transcribe base64-encoded audio using Groq Whisper."""
+    import base64, tempfile, os as _os
+    ext = '.ogg'
+    if 'mp4' in mime_type:   ext = '.mp4'
+    elif 'mp3' in mime_type: ext = '.mp3'
+    elif 'wav' in mime_type: ext = '.wav'
+    elif 'webm' in mime_type: ext = '.webm'
+    tmp_path = None
+    try:
+        audio_bytes = base64.b64decode(audio_b64)
+        with tempfile.NamedTemporaryFile(suffix=ext, delete=False) as tmp:
+            tmp.write(audio_bytes)
+            tmp_path = tmp.name
+        from groq import Groq as _Groq
+        client = _Groq()
+        with open(tmp_path, 'rb') as f:
+            result = client.audio.transcriptions.create(
+                file=(f'voice{ext}', f, mime_type.split(';')[0]),
+                model='whisper-large-v3',
+                language='en',
+            )
+        return (result.text or '').strip()
+    except Exception as exc:
+        print(f'[Voice] Transcription failed: {exc}')
+        return ''
+    finally:
+        if tmp_path:
+            try: _os.unlink(tmp_path)
+            except Exception: pass
+
+
 def baileys_webhook(request):
     """Internal endpoint called by the Baileys Node.js bot."""
-    from .whatsapp_agent import run_agent
+    from .whatsapp_agent import run_agent, run_agent_with_image
     try:
-        data  = json.loads(request.body)
-        phone = data.get('phone', '')
-        body  = (data.get('body') or '').strip()
-        if not phone or not body:
+        data     = json.loads(request.body)
+        phone    = data.get('phone', '')
+        msg_type = data.get('type', 'text')
+        body     = (data.get('body') or '').strip()
+
+        if not phone:
+            return JsonResponse({'reply': ''})
+
+        # ── Voice note ────────────────────────────────────────────
+        if msg_type == 'audio':
+            audio_b64 = data.get('audio_b64', '')
+            mime_type = data.get('mime_type', 'audio/ogg')
+            if not audio_b64:
+                return JsonResponse({'reply': ''})
+            transcript = _transcribe_audio_b64(audio_b64, mime_type)
+            if not transcript:
+                return JsonResponse({'reply': "🎙️ Sorry, I couldn't make out that voice note. Please try again or type your message."})
+            print(f'[Baileys] Voice → "{transcript[:80]}"')
+            reply = run_agent(phone, transcript)
+            return JsonResponse({'reply': reply})
+
+        # ── Image ─────────────────────────────────────────────────
+        if msg_type == 'image':
+            image_b64 = data.get('image_b64', '')
+            mime_type = data.get('mime_type', 'image/jpeg')
+            if not image_b64:
+                return JsonResponse({'reply': ''})
+            print(f'[Baileys] Image received from {phone} (caption: "{body[:60]}")')
+            reply = run_agent_with_image(phone, body, image_b64, mime_type)
+            return JsonResponse({'reply': reply})
+
+        # ── Text ──────────────────────────────────────────────────
+        if not body:
             return JsonResponse({'reply': ''})
         reply = run_agent(phone, body)
         return JsonResponse({'reply': reply})
+
     except Exception as e:
         print(f'[Baileys] Error: {e}')
         return JsonResponse({'reply': 'Sorry, something went wrong.'}, status=200)
