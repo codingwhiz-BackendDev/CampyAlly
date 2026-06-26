@@ -431,6 +431,21 @@ TOOLS = [
     },
 ]
 
+# Redemption City (RCCG Camp) centre coordinates and allowed radius
+CAMP_LAT    = 6.7583   # latitude of camp centre
+CAMP_LNG    = 3.5697   # longitude of camp centre
+CAMP_RADIUS_KM = 5.0   # 5 km radius — covers the full camp and its immediate surrounds
+
+def _haversine_km(lat1, lng1, lat2, lng2) -> float:
+    R = 6371.0
+    dlat = math.radians(lat2 - lat1)
+    dlng = math.radians(lng2 - lng1)
+    a = math.sin(dlat / 2) ** 2 + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlng / 2) ** 2
+    return R * 2 * math.asin(math.sqrt(a))
+
+def _is_within_camp(lat, lng) -> bool:
+    return _haversine_km(lat, lng, CAMP_LAT, CAMP_LNG) <= CAMP_RADIUS_KM
+
 # In-memory conversation cache (backed by DB on each turn).
 _conversations: dict[str, list] = {}
 
@@ -836,6 +851,15 @@ def run_agent(user_phone, body, user_lat=None, user_lng=None) -> str:
     # Load or create the persistent user record
     wa_user = _get_wa_user(phone)
     history = _load_conversation(wa_user)
+
+    # Camp boundary check — reject GPS shares from outside the camp
+    if user_lat is not None and user_lng is not None:
+        if not _is_within_camp(user_lat, user_lng):
+            return (
+                "📍 It looks like you're not currently within *Redemption City* camp.\n\n"
+                "CampAlly only works inside the camp grounds. If you believe this is a mistake, "
+                "please share your location again once you're on-site. 🏕️"
+            )
 
     # Location share: bypass LLM for parking only; let LLM handle "save" intent
     _save_keywords = ("save", "remember", "bookmark", "pin", "keep", "mark")
