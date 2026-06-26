@@ -25,6 +25,9 @@ urlpatterns = [
 
     # WhatsApp — Meta Cloud API
     path('whatsapp/meta/', landing_views.meta_whatsapp_webhook, name='meta_whatsapp_webhook'),
+
+    # WhatsApp — Baileys (QR code, no Twilio/Meta needed)
+    path('whatsapp/baileys/', landing_views.baileys_webhook, name='baileys_webhook'),
 ]
 
 if settings.DEBUG:

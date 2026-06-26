@@ -1062,6 +1062,24 @@ def whatsapp_status(request):
 
 @csrf_exempt
 @require_POST
+def baileys_webhook(request):
+    """Internal endpoint called by the Baileys Node.js bot."""
+    from .whatsapp_agent import run_agent
+    try:
+        data  = json.loads(request.body)
+        phone = data.get('phone', '')
+        body  = (data.get('body') or '').strip()
+        if not phone or not body:
+            return JsonResponse({'reply': ''})
+        reply = run_agent(phone, body)
+        return JsonResponse({'reply': reply})
+    except Exception as e:
+        print(f'[Baileys] Error: {e}')
+        return JsonResponse({'reply': 'Sorry, something went wrong.'}, status=200)
+
+
+@csrf_exempt
+@require_POST
 def whatsapp_webhook(request):
     """Twilio WhatsApp webhook — receives inbound messages, replies with TwiML."""
     from xml.sax.saxutils import escape
