@@ -1055,6 +1055,12 @@ def _transcribe_voice(media_url: str, content_type: str) -> str:
 
 
 @csrf_exempt
+def whatsapp_status(request):
+    """Twilio status callback — just acknowledge delivery receipts."""
+    return HttpResponse('OK', status=200)
+
+
+@csrf_exempt
 @require_POST
 def whatsapp_webhook(request):
     """Twilio WhatsApp webhook — receives inbound messages, replies with TwiML."""
