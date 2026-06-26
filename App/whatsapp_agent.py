@@ -88,27 +88,29 @@ CLAUDE_TOOLS = [
 SYSTEM_PROMPT = """You are CampAlly, the WhatsApp assistant for Redemption City \
 (the Redeemed Christian Church of God camp on the Lagos-Ibadan Expressway).
 
-FIRST MESSAGE RULE: If the conversation history has only ONE user message (the \
-current one), this is a brand new user. Greet them warmly, introduce yourself, \
-list what you can do, then ask for their name. Example (adapt freely):
+FIRST MESSAGE RULE:
+- If the system note says the user's name is ALREADY KNOWN, skip the intro. \
+Just greet them briefly by name and ask how you can help. Example: \
+"Welcome back [Name]! 👋 How can I help you today?"
+- If this is a BRAND NEW user (no name in system note), introduce yourself, \
+list your services, then ask for their name. Use this template (adapt freely):
 
 "👋 Hi! I'm *CampAlly*, your smart guide at Redemption City 🏕️
 
 Here's what I can help you with:
-🚗 *Parking* — find available car parks or share your 📍 location and I'll \
-direct you to the nearest open one
-🗺️ *Nearby places* — hotels, restaurants, ATMs, hospitals and more near any \
-camp landmark
-🚨 *Emergencies* — instantly alert the control room for medical, fire, \
-security or stampede situations
+🚗 *Parking* — find available spots or share your 📍 location and I'll \
+route you to the nearest open park
+🗺️ *Nearby places* — hotels, restaurants, ATMs, hospitals and more
+🚨 *Emergencies* — instantly alert the control room for any crisis
 📝 *Lost & Found* — file or search for lost people or items
 
 May I know your name so I can assist you better? 😊"
 
 NAME RULE: As soon as the user tells you their name, call save_user_name \
-immediately. If the system note says their name is already known, use it \
-naturally in your replies (e.g. "Sure [Name]!", "On it [Name] 👍") — but \
-don't overdo it, just make it feel warm and personal.
+immediately. Then greet them by name and ask how you can help. \
+If the system note says their name is already known, use it \
+naturally in replies (e.g. "Sure [Name]!", "On it [Name] 👍") — \
+warm but not excessive.
 
 You help visitors with four things:
 1. PARKING — find available car parks and route them to the nearest open one. \
@@ -372,9 +374,27 @@ TOOLS = [
     },
 ]
 
-# In-memory conversation history and user profiles, keyed by WhatsApp number.
+# In-memory conversation history, keyed by WhatsApp number.
 _conversations: dict[str, list] = {}
-_user_profiles: dict[str, dict] = {}  # {phone: {"name": "Timi"}}
+
+# User profiles — persisted to disk so names survive Django restarts.
+_PROFILES_PATH = os.path.join(os.path.dirname(__file__), '..', 'user_profiles.json')
+
+def _load_profiles() -> dict:
+    try:
+        with open(_PROFILES_PATH, 'r') as f:
+            return json.load(f)
+    except Exception:
+        return {}
+
+def _save_profiles(profiles: dict):
+    try:
+        with open(_PROFILES_PATH, 'w') as f:
+            json.dump(profiles, f)
+    except Exception as e:
+        print(f'[CampAlly] Could not save profiles: {e}')
+
+_user_profiles: dict[str, dict] = _load_profiles()
 
 
 def _haversine_m(lat1, lng1, lat2, lng2):
@@ -532,6 +552,7 @@ def _execute_tool(name, tool_input, ctx) -> str:
             user_name = (tool_input.get("name") or "").strip()
             if user_name and ctx.get("phone"):
                 _user_profiles.setdefault(ctx["phone"], {})["name"] = user_name
+                _save_profiles(_user_profiles)
             return f"Name saved: {user_name}"
         if name == "get_available_parking":
             return _tool_get_available_parking()
