@@ -165,8 +165,9 @@ admin.site.register(EmergencyTimeline)
 
 @admin.register(WhatsAppUser)
 class WhatsAppUserAdmin(admin.ModelAdmin):
-    list_display  = ('phone', 'name', 'message_count', 'first_seen', 'last_seen')
-    search_fields = ('phone', 'name')
+    list_display  = ('phone', 'name', 'email', 'gender', 'onboarding_step', 'message_count', 'first_seen', 'last_seen')
+    search_fields = ('phone', 'name', 'email')
+    list_filter   = ('gender', 'onboarding_step')
     readonly_fields = ('phone', 'first_seen', 'last_seen', 'message_count', 'conversation')
     ordering = ('-last_seen',)
 

@@ -123,11 +123,11 @@ SYSTEM_PROMPT = """You are CampAlly, the WhatsApp assistant for Redemption City 
 (the Redeemed Christian Church of God camp on the Lagos-Ibadan Expressway).
 
 FIRST MESSAGE RULE:
-- If the system note says the user's name is ALREADY KNOWN, skip the intro. \
-Just greet them briefly by name and ask how you can help. Example: \
-"Welcome back [Name]! 👋 How can I help you today?"
-- If this is a BRAND NEW user (no name in system note), introduce yourself, \
-list your services, then ask for their name. Use this template (adapt freely):
+All users have already completed registration (name, email, gender collected at signup). \
+Never ask for their name or any personal details again. \
+- If the system note says the user's name is ALREADY KNOWN, greet them briefly \
+by name and ask how you can help. Example: "Welcome back [Name]! 👋 How can I help you today?"
+- If no name is in the system note, just greet warmly and ask how you can help.
 
 "👋 Hi! I'm *CampAlly*, your smart guide at Redemption City 🏕️
 
@@ -884,6 +884,77 @@ def _run_groq_fallback(messages, system_prompt, ctx) -> str:
     return ""
 
 
+def _handle_onboarding(wa_user, body: str) -> str | None:
+    """
+    Collect full name, email, gender before bot access.
+    Returns a reply string while onboarding is in progress, or None when complete.
+    """
+    import re
+    step = wa_user.onboarding_step
+    text = (body or "").strip()
+
+    # Step 0 — brand new user, send welcome + ask for name
+    if step == 0:
+        wa_user.onboarding_step = 1
+        wa_user.save(update_fields=["onboarding_step"])
+        return (
+            "👋 Welcome to *CampAlly* — your smart guide at Redemption City! 🏕️\n\n"
+            "Before we get started, we need a few quick details.\n\n"
+            "What is your *full name*? (first and last name)"
+        )
+
+    # Step 1 — collecting full name
+    if step == 1:
+        if len(text.split()) < 2:
+            return "Please enter your *full name* (first and last name). Example: *John Okafor*"
+        wa_user.name = text.title()
+        wa_user.onboarding_step = 2
+        wa_user.save(update_fields=["name", "onboarding_step"])
+        return (
+            f"Thanks *{wa_user.name}*! 😊\n\n"
+            "What is your *email address*?"
+        )
+
+    # Step 2 — collecting email
+    if step == 2:
+        if not re.match(r"[^@]+@[^@]+\.[^@]+", text):
+            return "That doesn't look like a valid email. Please enter a valid *email address*. Example: *john@gmail.com*"
+        wa_user.email = text.lower()
+        wa_user.onboarding_step = 3
+        wa_user.save(update_fields=["email", "onboarding_step"])
+        return (
+            "Almost there! 🙌\n\n"
+            "What is your *gender*?\n\n"
+            "Reply with: *Male*, *Female*, or *Other*"
+        )
+
+    # Step 3 — collecting gender
+    if step == 3:
+        gender_map = {
+            "male": "male", "m": "male", "man": "male", "boy": "male",
+            "female": "female", "f": "female", "woman": "female", "girl": "female",
+            "other": "other", "prefer not": "other", "others": "other",
+        }
+        gender = gender_map.get(text.lower())
+        if not gender:
+            return "Please reply with *Male*, *Female*, or *Other*."
+        wa_user.gender = gender
+        wa_user.onboarding_step = 4
+        wa_user.save(update_fields=["gender", "onboarding_step"])
+        return (
+            f"You're all set, *{wa_user.name.split()[0]}*! 🎉\n\n"
+            "Here's what I can help you with:\n"
+            "1. Find available parking\n"
+            "2. Locate nearby places\n"
+            "3. Report emergencies\n"
+            "4. Lost & Found\n"
+            "5. Save your location\n\n"
+            "How can I help you today? 😊"
+        )
+
+    return None  # onboarding complete
+
+
 def run_agent(user_phone, body, user_lat=None, user_lng=None) -> str:
     """Run one WhatsApp turn — Claude primary, Groq fallback."""
     phone = (user_phone or "").replace("whatsapp:", "")
@@ -895,6 +966,13 @@ def run_agent(user_phone, body, user_lat=None, user_lng=None) -> str:
 
     # Load or create the persistent user record
     wa_user = _get_wa_user(phone)
+
+    # Onboarding gate — collect name, email, gender before bot access
+    if wa_user.onboarding_step < 4:
+        onboarding_reply = _handle_onboarding(wa_user, body)
+        if onboarding_reply:
+            return onboarding_reply
+
     history = _load_conversation(wa_user)
 
     # Camp boundary check — reject GPS shares from outside the camp
