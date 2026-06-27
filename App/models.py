@@ -327,6 +327,9 @@ class WhatsAppUser(models.Model):
     message_count    = models.PositiveIntegerField(default=0)
     conversation     = models.TextField(default='[]')
     saved_locations  = models.TextField(default='{}')
+    # Rate limiting — 20 messages per 3-hour rolling window
+    rate_window_start = models.DateTimeField(null=True, blank=True)
+    rate_window_count = models.PositiveIntegerField(default=0)
 
     def __str__(self):
         return f"{self.name or 'Unknown'} ({self.phone})"

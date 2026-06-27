@@ -509,21 +509,58 @@ def _is_within_camp(lat, lng) -> bool:
 # In-memory conversation cache (backed by DB on each turn).
 _conversations: dict[str, list] = {}
 
-# Rate limiting — track message timestamps per phone number.
-import time as _time
-_rate_timestamps: dict[str, list] = {}
-RATE_LIMIT        = 20   # max messages
-RATE_WINDOW       = 60   # per N seconds
+# Rate limiting — 20 messages per 3-hour rolling window (stored in DB, survives restarts)
+from datetime import timedelta
+from django.utils import timezone as _tz
 
-def _is_rate_limited(phone: str) -> bool:
-    now = _time.time()
-    ts  = _rate_timestamps.get(phone, [])
-    ts  = [t for t in ts if now - t < RATE_WINDOW]
-    _rate_timestamps[phone] = ts
-    if len(ts) >= RATE_LIMIT:
-        return True
-    _rate_timestamps[phone].append(now)
-    return False
+RATE_LIMIT  = 20         # max messages per window
+RATE_WINDOW = 3 * 3600   # 3 hours in seconds
+
+
+def _check_rate_limit(wa_user) -> tuple[bool, str]:
+    """
+    Returns (is_limited, message).
+    - is_limited=False  → message was counted, caller may proceed
+    - is_limited=True   → caller must return the message string to the user
+    """
+    now    = _tz.now()
+    window = timedelta(seconds=RATE_WINDOW)
+
+    # Start a fresh window if none exists or the window has expired
+    if wa_user.rate_window_start is None or (now - wa_user.rate_window_start) >= window:
+        wa_user.rate_window_start = now
+        wa_user.rate_window_count = 1
+        wa_user.save(update_fields=['rate_window_start', 'rate_window_count'])
+        return False, ""
+
+    if wa_user.rate_window_count >= RATE_LIMIT:
+        # Calculate how long until the window resets
+        reset_at   = wa_user.rate_window_start + window
+        remaining  = reset_at - now
+        total_secs = int(remaining.total_seconds())
+        hrs  = total_secs // 3600
+        mins = (total_secs % 3600) // 60
+        secs = total_secs % 60
+
+        if hrs > 0:
+            time_str = f"{hrs}hr {'1min' if mins == 1 else f'{mins}mins'}" if mins else f"{hrs}hr"
+        elif mins > 0:
+            time_str = f"{mins} minute{'s' if mins != 1 else ''}"
+        else:
+            time_str = f"{secs} second{'s' if secs != 1 else ''}"
+
+        msg = (
+            f"⏳ *Rate limit reached!*\n\n"
+            f"You've used all *{RATE_LIMIT} messages* in your 3-hour window.\n\n"
+            f"🔁 Your limit resets in *{time_str}*.\n\n"
+            f"🚀 Higher limits & premium plans are *coming soon* — stay tuned!"
+        )
+        return True, msg
+
+    # Within window, still has quota — increment counter
+    wa_user.rate_window_count += 1
+    wa_user.save(update_fields=['rate_window_count'])
+    return False, ""
 
 def _get_wa_user(phone: str) -> "WhatsAppUser":
     user, _ = WhatsAppUser.objects.get_or_create(phone=phone)
@@ -980,18 +1017,19 @@ def run_agent(user_phone, body, user_lat=None, user_lng=None) -> str:
     phone = (user_phone or "").replace("whatsapp:", "")
     ctx   = {"phone": phone, "lat": user_lat, "lng": user_lng}
 
-    # Rate limit check
-    if _is_rate_limited(phone):
-        return ("⏳ You're sending messages too fast. Please wait a moment and try again.")
-
-    # Load or create the persistent user record
+    # Load or create the persistent user record first (needed for rate limit check)
     wa_user = _get_wa_user(phone)
 
-    # Onboarding gate — collect name, email, gender before bot access
+    # Onboarding gate — rate limit does NOT apply during onboarding
     if wa_user.onboarding_step < 4:
         onboarding_reply = _handle_onboarding(wa_user, body)
         if onboarding_reply:
             return onboarding_reply
+
+    # Rate limit check (DB-backed, 20 msgs / 3 hrs)
+    limited, limit_msg = _check_rate_limit(wa_user)
+    if limited:
+        return limit_msg
 
     history = _load_conversation(wa_user)
 
@@ -1062,10 +1100,11 @@ def run_agent_with_image(user_phone: str, caption: str, image_b64: str, mime_typ
     """Process an image message — uses Claude vision to identify places/things in camp."""
     phone = (user_phone or "").replace("whatsapp:", "")
 
-    if _is_rate_limited(phone):
-        return "⏳ You're sending messages too fast. Please wait a moment and try again."
-
     wa_user  = _get_wa_user(phone)
+
+    limited, limit_msg = _check_rate_limit(wa_user)
+    if limited:
+        return limit_msg
     history  = _load_conversation(wa_user)
     known_name = wa_user.name or ""
     name_note  = (f"\n\n[System note: This user's name is *{known_name}*. "
