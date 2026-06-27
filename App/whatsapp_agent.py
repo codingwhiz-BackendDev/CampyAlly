@@ -63,15 +63,7 @@ CLAUDE_TOOLS = [
             "required": ["category", "title", "description"],
         },
     },
-    {
-        "name": "save_user_name",
-        "description": "Save the user's name. Call as soon as the user tells you their name.",
-        "input_schema": {
-            "type": "object",
-            "properties": {"name": {"type": "string"}},
-            "required": ["name"],
-        },
-    },
+
     {
         "name": "find_nearby_places",
         "description": "Find hotels, restaurants, hospitals, ATMs etc. near a camp landmark.",
@@ -125,28 +117,10 @@ SYSTEM_PROMPT = """You are CampAlly, the WhatsApp assistant for Redemption City 
 FIRST MESSAGE RULE:
 All users have already completed registration (name, email, gender collected at signup). \
 Never ask for their name or any personal details again. \
-- If the system note says the user's name is ALREADY KNOWN, greet them briefly \
-by name and ask how you can help. Example: "Welcome back [Name]! 👋 How can I help you today?"
-- If no name is in the system note, just greet warmly and ask how you can help.
+- Greet them briefly by name if known and ask how you can help. Example: "Welcome back [Name]! 👋 How can I help you today?"
+- If the user asks what you can do, summarize your capabilities (parking, nearby places, emergencies, lost & found, saving locations, answering general questions about the camp, advertisement inquiries, and user guidelines).
 
-"👋 Hi! I'm *CampAlly*, your smart guide at Redemption City 🏕️
-
-Here's what I can do:
-1. Find available parking
-2. Locate nearby places
-3. Report emergencies
-4. Lost & Found
-5. Save your location
-
-May I know your name? 😊"
-
-NAME RULE: As soon as the user tells you their name, call save_user_name \
-immediately. Then greet them by name and ask how you can help. \
-If the system note says their name is already known, use it \
-naturally in replies (e.g. "Sure [Name]!", "On it [Name] 👍") — \
-warm but not excessive.
-
-You help visitors with four things:
+You help visitors with eight main things:
 1. PARKING — find available car parks and route them to the nearest open one. \
 The camp's car parks include Car Park A, B and C (Old Auditorium; Car Park C is \
 the famous expressway-entrance landmark), Car Park D (National Youth Centre), \
@@ -200,11 +174,20 @@ When a user says "take me back", "I'm lost", "find my saved spot", \
 "where did I save", "where is my [name]", "take me to my car" etc., \
 call get_saved_location with the label. If no label is mentioned, \
 call get_saved_location with an empty label to list all their saved spots.
+6. GENERAL CAMP KNOWLEDGE — You can answer any questions about Redemption City camp \
+(locations, events, history, rules, schedules, etc.).
+7. ADVERTISEMENTS — Inform users that they can place advertisements on this platform. \
+If they ask about ads, tell them to contact the CampAlly admin team via email (ads@campally.com) \
+or direct them to the front desk.
+8. USER GUIDELINES — Provide the platform's user guidelines. \
+Tell them: "CampAlly is a respectful and safe community. Please use this bot responsibly, \
+do not spam, report emergencies accurately, and respect the privacy of others."
 
 SCOPE RULE (MOST IMPORTANT):
 You ONLY answer questions about Redemption City camp and things directly \
 useful to visitors there — parking, emergencies, lost & found, nearby places \
-inside or around the camp, saved locations, and general camp navigation. \
+inside or around the camp, saved locations, general camp navigation, advertisements, \
+and user guidelines. \
 If a user asks about ANYTHING outside this scope — general knowledge, news, \
 maths, coding, sports, politics, recipes, other cities, other topics — \
 respond with exactly this (adapt the wording slightly to feel natural):
@@ -435,26 +418,7 @@ TOOLS = [
             },
         },
     },
-    {
-        "type": "function",
-        "function": {
-            "name": "save_user_name",
-            "description": (
-                "Save the user's name so it can be used in future messages. "
-                "Call this as soon as the user tells you their name."
-            ),
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "name": {
-                        "type": "string",
-                        "description": "The user's first name or full name.",
-                    },
-                },
-                "required": ["name"],
-            },
-        },
-    },
+
     {
         "type": "function",
         "function": {
@@ -492,9 +456,9 @@ TOOLS = [
 ]
 
 # Redemption City (RCCG Camp) centre coordinates and allowed radius
-CAMP_LAT    = 6.7583   # latitude of camp centre
-CAMP_LNG    = 3.5697   # longitude of camp centre
-CAMP_RADIUS_KM = 5.0   # 5 km radius — covers the full camp and its immediate surrounds
+CAMP_LAT    = 6.7850   # latitude of camp centre
+CAMP_LNG    = 3.4490   # longitude of camp centre
+CAMP_RADIUS_KM = 10.0   # 10 km radius — covers the full camp and its immediate surrounds
 
 def _haversine_km(lat1, lng1, lat2, lng2) -> float:
     R = 6371.0
@@ -573,7 +537,12 @@ def _load_conversation(user: "WhatsAppUser") -> list:
         return []
 
 def _save_conversation(user: "WhatsAppUser", history: list):
-    user.conversation = json.dumps(history[-50:])
+    # M3: cap each message body to 2000 chars to prevent DB bloat
+    trimmed = [
+        {'role': m['role'], 'content': m['content'][:2000]}
+        for m in history[-50:]
+    ]
+    user.conversation = json.dumps(trimmed)
     user.message_count += 1
     user.save(update_fields=['conversation', 'message_count', 'last_seen'])
 
@@ -685,6 +654,19 @@ out center 10;"""
     header = f"📍 *{place_type.title()}* near *{location_name.title()}* ({len(results)} found):\n\n"
     return header + "\n\n".join(lines)
 
+def _send_baileys_message(phone: str, text: str):
+    import urllib.request, json
+    try:
+        req = urllib.request.Request(
+            "http://localhost:3001/send",
+            data=json.dumps({"phone": phone, "message": text}).encode(),
+            headers={"Content-Type": "application/json"}
+        )
+        with urllib.request.urlopen(req, timeout=5):
+            pass
+    except Exception as e:
+        print(f"[Broadcast] Failed to send to {phone}: {e}")
+
 
 def _tool_report_emergency(emergency_type, description,
                            location_name, reporter_phone) -> str:
@@ -705,6 +687,27 @@ def _tool_report_emergency(emergency_type, description,
         note="Reported via WhatsApp",
         updated_by="WhatsApp Bot",
     )
+    try:
+        reporter = WhatsAppUser.objects.filter(phone=reporter_phone).first()
+        if reporter and reporter.last_latitude is not None and reporter.last_longitude is not None:
+            recent_cutoff = _tz.now() - timedelta(days=3)
+            nearby_users = []
+            for u in WhatsAppUser.objects.filter(last_latitude__isnull=False).exclude(phone=reporter_phone):
+                if u.last_seen and u.last_seen >= recent_cutoff:
+                    dist = _haversine_m(reporter.last_latitude, reporter.last_longitude, u.last_latitude, u.last_longitude)
+                    if dist <= 1000:
+                        nearby_users.append(u)
+                        
+            if nearby_users:
+                msg = (f"🚨 *CAMP URGENT ALERT* 🚨\n\n"
+                       f"An emergency ({report.get_emergency_type_display()}) has been reported near your last known location.\n"
+                       f"*Location details:* {location_name or 'Nearby'}\n\n"
+                       f"Please stay safe, avoid the immediate area if dangerous, or assist if you are trained and it is safe to do so.")
+                for u in nearby_users:
+                    _send_baileys_message(u.phone, msg)
+    except Exception as e:
+        print(f"[Broadcast] Failed to broadcast SOS: {e}")
+
     return (f"🚨 Emergency logged (ref *{str(report.id)[:8]}*). The control room "
             f"has been alerted on the live dashboard. Help is being arranged — "
             f"stay where you are if it's safe.")
@@ -815,11 +818,6 @@ def _tool_get_saved_location(label: str, ctx: dict) -> str:
 
 def _execute_tool(name, tool_input, ctx) -> str:
     try:
-        if name == "save_user_name":
-            user_name = (tool_input.get("name") or "").strip()
-            if user_name and ctx.get("phone"):
-                WhatsAppUser.objects.filter(phone=ctx["phone"]).update(name=user_name)
-            return f"Name saved: {user_name}"
         if name == "get_available_parking":
             return _tool_get_available_parking()
         if name == "find_nearest_open_zone":
@@ -1000,7 +998,10 @@ def _handle_onboarding(wa_user, body: str) -> str | None:
             "2. 📍 Locate nearby places\n"
             "3. 🆘 Report emergencies\n"
             "4. 🔍 Lost & Found\n"
-            "5. 💾 Save your location\n\n"
+            "5. 💾 Save your location\n"
+            "6. ❓ Ask questions about Redemption Camp\n"
+            "7. 📢 Advertisement Inquiries\n"
+            "8. 📜 User Guidelines\n\n"
             "━━━━━━━━━━━━━━━━━━━━\n"
             "⚡ *Rate Limit Notice*\n"
             "━━━━━━━━━━━━━━━━━━━━\n"
@@ -1033,14 +1034,7 @@ def run_agent(user_phone, body, user_lat=None, user_lng=None) -> str:
 
     history = _load_conversation(wa_user)
 
-    # Camp boundary check — reject GPS shares from outside the camp
-    if user_lat is not None and user_lng is not None:
-        if not _is_within_camp(user_lat, user_lng):
-            return (
-                "📍 It looks like you're not currently within *Redemption City* camp.\n\n"
-                "CampAlly only works inside the camp grounds. If you believe this is a mistake, "
-                "please share your location again once you're on-site. 🏕️"
-            )
+    # Camp boundary check disabled — coordinates need calibration with real camp map
 
     known_name = wa_user.name or ""
     name_note  = (f"\n\n[System note: This user's name is *{known_name}*. "
