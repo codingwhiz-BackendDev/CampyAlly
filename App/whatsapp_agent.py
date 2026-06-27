@@ -959,11 +959,16 @@ def _handle_onboarding(wa_user, body: str) -> str | None:
         return (
             f"You're all set, *{wa_user.name.split()[0]}*! 🎉\n\n"
             "Here's what I can help you with:\n"
-            "1. Find available parking\n"
-            "2. Locate nearby places\n"
-            "3. Report emergencies\n"
-            "4. Lost & Found\n"
-            "5. Save your location\n\n"
+            "1. 🅿️ Find available parking\n"
+            "2. 📍 Locate nearby places\n"
+            "3. 🆘 Report emergencies\n"
+            "4. 🔍 Lost & Found\n"
+            "5. 💾 Save your location\n\n"
+            "━━━━━━━━━━━━━━━━━━━━\n"
+            "⚡ *Rate Limit Notice*\n"
+            "━━━━━━━━━━━━━━━━━━━━\n"
+            "Your free account includes a *limited number of messages per day*.\n\n"
+            "🚀 Higher limits & premium features are *coming soon* — stay tuned!\n\n"
             "How can I help you today? 😊"
         )
 
